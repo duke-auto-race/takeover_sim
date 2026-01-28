@@ -1,0 +1,6 @@
+Invoking command in '/home/patrick/ugv_ws/ros2_ws/build/race_cpp': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/patrick/ugv_ws/ros2_ws/src/race_cpp -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/patrick/ugv_ws/ros2_ws/install/race_cpp
+Invoked command in '/home/patrick/ugv_ws/ros2_ws/build/race_cpp' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/patrick/ugv_ws/ros2_ws/src/race_cpp -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/patrick/ugv_ws/ros2_ws/install/race_cpp
+Invoking command in '/home/patrick/ugv_ws/ros2_ws/build/race_cpp': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/patrick/ugv_ws/ros2_ws/build/race_cpp -- -j32 -l32
+Invoked command in '/home/patrick/ugv_ws/ros2_ws/build/race_cpp' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/patrick/ugv_ws/ros2_ws/build/race_cpp -- -j32 -l32
+Invoking command in '/home/patrick/ugv_ws/ros2_ws/build/race_cpp': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/patrick/ugv_ws/ros2_ws/build/race_cpp
+Invoked command in '/home/patrick/ugv_ws/ros2_ws/build/race_cpp' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/patrick/ugv_ws/ros2_ws/build/race_cpp

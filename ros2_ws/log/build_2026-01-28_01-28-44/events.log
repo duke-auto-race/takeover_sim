@@ -1,0 +1,230 @@
+[0.000000] (-) TimerEvent: {}
+[0.000217] (race_cpp) JobQueued: {'identifier': 'race_cpp', 'dependencies': OrderedDict()}
+[0.000279] (race_cpp) JobStarted: {'identifier': 'race_cpp'}
+[0.004439] (race_cpp) JobProgress: {'identifier': 'race_cpp', 'progress': 'cmake'}
+[0.004795] (race_cpp) Command: {'cmd': ['/usr/bin/cmake', '/home/patrick/ugv_ws/ros2_ws/src/race_cpp', '-DAMENT_CMAKE_SYMLINK_INSTALL=1', '-DCMAKE_INSTALL_PREFIX=/home/patrick/ugv_ws/ros2_ws/install/race_cpp'], 'cwd': '/home/patrick/ugv_ws/ros2_ws/build/race_cpp', 'env': OrderedDict([('PYTHON_BASIC_REPL', '1'), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'patrick'), ('SSH_CLIENT', '10.5.5.2 52396 22'), ('XDG_SESSION_TYPE', 'tty'), ('GIT_ASKPASS', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/extensions/git/dist/askpass.sh'), ('SHLVL', '3'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/bin/helpers/browser.sh'), ('MOTD_SHOWN', 'pam'), ('HOME', '/home/patrick'), ('OLDPWD', '/home/patrick/ugv_ws'), ('TERM_PROGRAM_VERSION', '1.108.2'), ('VSCODE_IPC_HOOK_CLI', '/run/user/1001/vscode-ipc-dfe199f2-cc76-42c0-bcea-ed34c1a16f81.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/node'), ('SSL_CERT_FILE', '/usr/lib/ssl/certs/ca-certificates.crt'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1001/bus'), ('COLORTERM', 'truecolor'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'patrick'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('TERM', 'xterm-256color'), ('XDG_SESSION_ID', '225'), ('PATH', '/home/patrick/.local/bin:/home/patrick/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/patrick/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/bin/remote-cli:/home/patrick/.local/bin:/home/patrick/.local/bin:/opt/ros/humble/bin:/home/patrick/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/puppetlabs/bin'), ('XDG_RUNTIME_DIR', '/run/user/1001'), ('SSL_CERT_DIR', '/usr/lib/ssl/certs'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/home/patrick/.vscode-server/data/User/workspaceStorage/8923644c31e81c485380fe10cf6f30a7/ms-python.python/pythonrc.py'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/1001/vscode-git-502ec79434.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/home/patrick/ugv_ws/ros2_ws/build/race_cpp'), ('SSH_CONNECTION', '10.5.5.2 52396 192.168.0.240 22'), ('XDG_DATA_DIRS', '/usr/share/gnome:/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('MANPATH', ':/opt/puppetlabs/puppet/share/man'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble')]), 'shell': False}
+[0.038747] (race_cpp) StdoutLine: {'line': b'-- The C compiler identification is GNU 11.4.0\n'}
+[0.068368] (race_cpp) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 11.4.0\n'}
+[0.072008] (race_cpp) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.099778] (-) TimerEvent: {}
+[0.113421] (race_cpp) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.116872] (race_cpp) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.117000] (race_cpp) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.117263] (race_cpp) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.118731] (race_cpp) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.163297] (race_cpp) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[0.166856] (race_cpp) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[0.167061] (race_cpp) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[0.167248] (race_cpp) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[0.168233] (race_cpp) StdoutLine: {'line': b'-- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)\n'}
+[0.199903] (-) TimerEvent: {}
+[0.246687] (race_cpp) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter \n'}
+[0.276703] (race_cpp) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[0.287868] (race_cpp) StdoutLine: {'line': b'-- Found builtin_interfaces: 1.2.2 (/opt/ros/humble/share/builtin_interfaces/cmake)\n'}
+[0.300139] (-) TimerEvent: {}
+[0.303521] (race_cpp) StdoutLine: {'line': b'-- Found rosidl_generator_c: 3.1.8 (/opt/ros/humble/share/rosidl_generator_c/cmake)\n'}
+[0.305618] (race_cpp) StdoutLine: {'line': b'-- Found rosidl_adapter: 3.1.8 (/opt/ros/humble/share/rosidl_adapter/cmake)\n'}
+[0.309371] (race_cpp) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 3.1.8 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)\n'}
+[0.314685] (race_cpp) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.321631] (race_cpp) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.328111] (race_cpp) StdoutLine: {'line': b'-- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)\n'}
+[0.331876] (race_cpp) StdoutLine: {'line': b'-- Found Eigen3: TRUE (found version "3.4.0") \n'}
+[0.332385] (race_cpp) StdoutLine: {'line': b'-- Found geometry_msgs: 4.9.0 (/opt/ros/humble/share/geometry_msgs/cmake)\n'}
+[0.344804] (race_cpp) StdoutLine: {'line': b'-- Found mavros_msgs: 2.14.0 (/opt/ros/humble/share/mavros_msgs/cmake)\n'}
+[0.382446] (race_cpp) StdoutLine: {'line': b'-- Found rclcpp: 16.0.17 (/opt/ros/humble/share/rclcpp/cmake)\n'}
+[0.393276] (race_cpp) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)\n'}
+[0.394370] (race_cpp) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 6.2.9 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)\n'}
+[0.400185] (-) TimerEvent: {}
+[0.446678] (race_cpp) StdoutLine: {'line': b'-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  \n'}
+[0.466574] (race_cpp) StdoutLine: {'line': b'-- Found FastRTPS: /opt/ros/humble/include  \n'}
+[0.491556] (race_cpp) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[0.495345] (race_cpp) StdoutLine: {'line': b'-- Looking for pthread.h\n'}
+[0.500253] (-) TimerEvent: {}
+[0.538436] (race_cpp) StdoutLine: {'line': b'-- Looking for pthread.h - found\n'}
+[0.538595] (race_cpp) StdoutLine: {'line': b'-- Performing Test CMAKE_HAVE_LIBC_PTHREAD\n'}
+[0.579160] (race_cpp) StdoutLine: {'line': b'-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success\n'}
+[0.579971] (race_cpp) StdoutLine: {'line': b'-- Found Threads: TRUE  \n'}
+[0.598525] (race_cpp) StdoutLine: {'line': b'-- Found rclpy: 3.3.19 (/opt/ros/humble/share/rclpy/cmake)\n'}
+[0.599054] (race_cpp) StdoutLine: {'line': b'-- Found visualization_msgs: 4.9.0 (/opt/ros/humble/share/visualization_msgs/cmake)\n'}
+[0.600337] (-) TimerEvent: {}
+[0.610451] (race_cpp) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.12.14 (/opt/ros/humble/share/ament_lint_auto/cmake)\n'}
+[0.657713] (race_cpp) StdoutLine: {'line': b"-- Added test 'copyright' to check source files copyright and LICENSE\n"}
+[0.658215] (race_cpp) StdoutLine: {'line': b"-- Added test 'cppcheck' to perform static code analysis on C / C++ code\n"}
+[0.658319] (race_cpp) StdoutLine: {'line': b'-- Configured cppcheck include dirs: /home/patrick/ugv_ws/ros2_ws/src/race_cpp/include\n'}
+[0.658345] (race_cpp) StdoutLine: {'line': b'-- Configured cppcheck exclude dirs and/or files: \n'}
+[0.658739] (race_cpp) StdoutLine: {'line': b"-- Added test 'cpplint' to check C / C++ code against the Google style\n"}
+[0.658765] (race_cpp) StdoutLine: {'line': b'-- Configured cpplint exclude dirs and/or files: \n'}
+[0.658948] (race_cpp) StdoutLine: {'line': b"-- Added test 'flake8' to check Python code syntax and style conventions\n"}
+[0.659137] (race_cpp) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[0.659335] (race_cpp) StdoutLine: {'line': b"-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257\n"}
+[0.659695] (race_cpp) StdoutLine: {'line': b"-- Added test 'uncrustify' to check C / C++ code style\n"}
+[0.659736] (race_cpp) StdoutLine: {'line': b'-- Configured uncrustify additional arguments: \n'}
+[0.659898] (race_cpp) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[0.660543] (race_cpp) StdoutLine: {'line': b'-- Configuring done\n'}
+[0.666063] (race_cpp) StdoutLine: {'line': b'-- Generating done\n'}
+[0.668102] (race_cpp) StdoutLine: {'line': b'-- Build files have been written to: /home/patrick/ugv_ws/ros2_ws/build/race_cpp\n'}
+[0.673208] (race_cpp) CommandEnded: {'returncode': 0}
+[0.674732] (race_cpp) JobProgress: {'identifier': 'race_cpp', 'progress': 'build'}
+[0.674772] (race_cpp) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/patrick/ugv_ws/ros2_ws/build/race_cpp', '--', '-j32', '-l32'], 'cwd': '/home/patrick/ugv_ws/ros2_ws/build/race_cpp', 'env': OrderedDict([('PYTHON_BASIC_REPL', '1'), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'patrick'), ('SSH_CLIENT', '10.5.5.2 52396 22'), ('XDG_SESSION_TYPE', 'tty'), ('GIT_ASKPASS', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/extensions/git/dist/askpass.sh'), ('SHLVL', '3'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/bin/helpers/browser.sh'), ('MOTD_SHOWN', 'pam'), ('HOME', '/home/patrick'), ('OLDPWD', '/home/patrick/ugv_ws'), ('TERM_PROGRAM_VERSION', '1.108.2'), ('VSCODE_IPC_HOOK_CLI', '/run/user/1001/vscode-ipc-dfe199f2-cc76-42c0-bcea-ed34c1a16f81.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/node'), ('SSL_CERT_FILE', '/usr/lib/ssl/certs/ca-certificates.crt'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1001/bus'), ('COLORTERM', 'truecolor'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'patrick'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('TERM', 'xterm-256color'), ('XDG_SESSION_ID', '225'), ('PATH', '/home/patrick/.local/bin:/home/patrick/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/patrick/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/bin/remote-cli:/home/patrick/.local/bin:/home/patrick/.local/bin:/opt/ros/humble/bin:/home/patrick/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/puppetlabs/bin'), ('XDG_RUNTIME_DIR', '/run/user/1001'), ('SSL_CERT_DIR', '/usr/lib/ssl/certs'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/home/patrick/.vscode-server/data/User/workspaceStorage/8923644c31e81c485380fe10cf6f30a7/ms-python.python/pythonrc.py'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/1001/vscode-git-502ec79434.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/home/patrick/ugv_ws/ros2_ws/build/race_cpp'), ('SSH_CONNECTION', '10.5.5.2 52396 192.168.0.240 22'), ('XDG_DATA_DIRS', '/usr/share/gnome:/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('MANPATH', ':/opt/puppetlabs/puppet/share/man'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble')]), 'shell': False}
+[0.700426] (-) TimerEvent: {}
+[0.705504] (race_cpp) StdoutLine: {'line': b'[ 33%] \x1b[32mBuilding CXX object CMakeFiles/race_sim_server_node.dir/src/race_sim_server_node.cpp.o\x1b[0m\n'}
+[0.706658] (race_cpp) StdoutLine: {'line': b'[ 66%] \x1b[32mBuilding CXX object CMakeFiles/race_sim_server_node.dir/src/race_sim_server.cpp.o\x1b[0m\n'}
+[0.800528] (-) TimerEvent: {}
+[0.900868] (-) TimerEvent: {}
+[1.001169] (-) TimerEvent: {}
+[1.101514] (-) TimerEvent: {}
+[1.201756] (-) TimerEvent: {}
+[1.301936] (-) TimerEvent: {}
+[1.402125] (-) TimerEvent: {}
+[1.502457] (-) TimerEvent: {}
+[1.602816] (-) TimerEvent: {}
+[1.703133] (-) TimerEvent: {}
+[1.803432] (-) TimerEvent: {}
+[1.903665] (-) TimerEvent: {}
+[1.968887] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:1\x1b[m\x1b[K:\n'}
+[1.969082] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:31:88:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::PoseStamped_<std::allocator<void> >::ConstPtr\x1b[m\x1b[K\xe2\x80\x99 is deprecated [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations\x07-Wdeprecated-declarations\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[1.969147] (race_cpp) StderrLine: {'line': b'   31 |         void follower_pose_callback(const geometry_msgs::msg::PoseStamped::ConstPtr msg\x1b[01;35m\x1b[K)\x1b[m\x1b[K;\n'}
+[1.969204] (race_cpp) StderrLine: {'line': b'      |                                                                                        \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[1.969254] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/pose_stamped.hpp:7\x1b[m\x1b[K,\n'}
+[1.969303] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:9\x1b[m\x1b[K,\n'}
+[1.969352] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:1\x1b[m\x1b[K:\n'}
+[1.969400] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/pose_stamped__struct.hpp:116:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kdeclared here\n'}
+[1.969449] (race_cpp) StderrLine: {'line': b'  116 |     \x1b[01;36m\x1b[KConstPtr\x1b[m\x1b[K;\n'}
+[1.969497] (race_cpp) StderrLine: {'line': b'      |     \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[1.990052] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:1\x1b[m\x1b[K:\n'}
+[1.990234] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:38:76:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::Twist_<std::allocator<void> >::ConstPtr\x1b[m\x1b[K\xe2\x80\x99 is deprecated [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations\x07-Wdeprecated-declarations\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[1.990299] (race_cpp) StderrLine: {'line': b'   38 |         void cmd_vel_callback(const geometry_msgs::msg::Twist::ConstPtr msg\x1b[01;35m\x1b[K)\x1b[m\x1b[K;\n'}
+[1.990350] (race_cpp) StderrLine: {'line': b'      |                                                                            \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[1.990399] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/twist_stamped__struct.hpp:23\x1b[m\x1b[K,\n'}
+[1.990448] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/twist_stamped.hpp:7\x1b[m\x1b[K,\n'}
+[1.990497] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:10\x1b[m\x1b[K,\n'}
+[1.990547] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:1\x1b[m\x1b[K:\n'}
+[1.990594] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/twist__struct.hpp:115:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kdeclared here\n'}
+[1.990654] (race_cpp) StderrLine: {'line': b'  115 |     \x1b[01;36m\x1b[KConstPtr\x1b[m\x1b[K;\n'}
+[1.990702] (race_cpp) StderrLine: {'line': b'      |     \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[1.992019] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server_node.cpp:11\x1b[m\x1b[K:\n'}
+[1.992186] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:31:88:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::PoseStamped_<std::allocator<void> >::ConstPtr\x1b[m\x1b[K\xe2\x80\x99 is deprecated [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations\x07-Wdeprecated-declarations\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[1.992251] (race_cpp) StderrLine: {'line': b'   31 |         void follower_pose_callback(const geometry_msgs::msg::PoseStamped::ConstPtr msg\x1b[01;35m\x1b[K)\x1b[m\x1b[K;\n'}
+[1.992309] (race_cpp) StderrLine: {'line': b'      |                                                                                        \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[1.992360] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/pose_stamped.hpp:7\x1b[m\x1b[K,\n'}
+[1.992408] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server_node.cpp:6\x1b[m\x1b[K:\n'}
+[1.992457] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/pose_stamped__struct.hpp:116:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kdeclared here\n'}
+[1.992506] (race_cpp) StderrLine: {'line': b'  116 |     \x1b[01;36m\x1b[KConstPtr\x1b[m\x1b[K;\n'}
+[1.992554] (race_cpp) StderrLine: {'line': b'      |     \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[2.003908] (-) TimerEvent: {}
+[2.005528] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvoid sim_server::sim_timer_callback()\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[2.005703] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:49:21:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kvariable \xe2\x80\x98\x1b[01m\x1b[Ku_now\x1b[m\x1b[K\xe2\x80\x99 set but not used [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-but-set-variable\x07-Wunused-but-set-variable\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[2.005790] (race_cpp) StderrLine: {'line': b'   49 |     Eigen::Vector2d \x1b[01;35m\x1b[Ku_now\x1b[m\x1b[K = this->pd_ctrl();\n'}
+[2.005846] (race_cpp) StderrLine: {'line': b'      |                     \x1b[01;35m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[2.005895] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:\x1b[m\x1b[K At global scope:\n'}
+[2.005944] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:85:1:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::PoseStamped_<std::allocator<void> >::ConstPtr\x1b[m\x1b[K\xe2\x80\x99 is deprecated [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations\x07-Wdeprecated-declarations\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[2.005998] (race_cpp) StderrLine: {'line': b'   85 | \x1b[01;35m\x1b[K)\x1b[m\x1b[K\n'}
+[2.006047] (race_cpp) StderrLine: {'line': b'      | \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[2.006094] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/pose_stamped.hpp:7\x1b[m\x1b[K,\n'}
+[2.006142] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:9\x1b[m\x1b[K,\n'}
+[2.006193] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:1\x1b[m\x1b[K:\n'}
+[2.006241] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/pose_stamped__struct.hpp:116:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kdeclared here\n'}
+[2.006289] (race_cpp) StderrLine: {'line': b'  116 |     \x1b[01;36m\x1b[KConstPtr\x1b[m\x1b[K;\n'}
+[2.006336] (race_cpp) StderrLine: {'line': b'      |     \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[2.008294] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:105:1:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::Twist_<std::allocator<void> >::ConstPtr\x1b[m\x1b[K\xe2\x80\x99 is deprecated [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations\x07-Wdeprecated-declarations\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[2.008463] (race_cpp) StderrLine: {'line': b'  105 | \x1b[01;35m\x1b[K)\x1b[m\x1b[K\n'}
+[2.008525] (race_cpp) StderrLine: {'line': b'      | \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[2.008576] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/twist_stamped__struct.hpp:23\x1b[m\x1b[K,\n'}
+[2.008626] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/twist_stamped.hpp:7\x1b[m\x1b[K,\n'}
+[2.008675] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:10\x1b[m\x1b[K,\n'}
+[2.008723] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:1\x1b[m\x1b[K:\n'}
+[2.008780] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/twist__struct.hpp:115:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kdeclared here\n'}
+[2.008830] (race_cpp) StderrLine: {'line': b'  115 |     \x1b[01;36m\x1b[KConstPtr\x1b[m\x1b[K;\n'}
+[2.008878] (race_cpp) StderrLine: {'line': b'      |     \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[2.013947] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server_node.cpp:11\x1b[m\x1b[K:\n'}
+[2.014111] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:38:76:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::Twist_<std::allocator<void> >::ConstPtr\x1b[m\x1b[K\xe2\x80\x99 is deprecated [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated-declarations\x07-Wdeprecated-declarations\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[2.014176] (race_cpp) StderrLine: {'line': b'   38 |         void cmd_vel_callback(const geometry_msgs::msg::Twist::ConstPtr msg\x1b[01;35m\x1b[K)\x1b[m\x1b[K;\n'}
+[2.014236] (race_cpp) StderrLine: {'line': b'      |                                                                            \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[2.014286] (race_cpp) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/twist_stamped__struct.hpp:23\x1b[m\x1b[K,\n'}
+[2.014336] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/twist_stamped.hpp:7\x1b[m\x1b[K,\n'}
+[2.014384] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/include/race_cpp/race_sim_server.h:10\x1b[m\x1b[K,\n'}
+[2.014433] (race_cpp) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server_node.cpp:11\x1b[m\x1b[K:\n'}
+[2.014484] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/geometry_msgs/geometry_msgs/msg/detail/twist__struct.hpp:115:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kdeclared here\n'}
+[2.014532] (race_cpp) StderrLine: {'line': b'  115 |     \x1b[01;36m\x1b[KConstPtr\x1b[m\x1b[K;\n'}
+[2.014579] (race_cpp) StderrLine: {'line': b'      |     \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[2.094330] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvoid sim_server::viz()\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[2.094513] (race_cpp) StderrLine: {'line': b'\x1b[01m\x1b[K/home/patrick/ugv_ws/ros2_ws/src/race_cpp/src/race_sim_server.cpp:173:21:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kvariable \xe2\x80\x98\x1b[01m\x1b[Kdir\x1b[m\x1b[K\xe2\x80\x99 set but not used [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-but-set-variable\x07-Wunused-but-set-variable\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[2.094588] (race_cpp) StderrLine: {'line': b'  173 |     Eigen::Vector3d \x1b[01;35m\x1b[Kdir\x1b[m\x1b[K = (target - pos).normalized();\n'}
+[2.094640] (race_cpp) StderrLine: {'line': b'      |                     \x1b[01;35m\x1b[K^~~\x1b[m\x1b[K\n'}
+[2.104088] (-) TimerEvent: {}
+[2.204440] (-) TimerEvent: {}
+[2.304951] (-) TimerEvent: {}
+[2.405214] (-) TimerEvent: {}
+[2.505552] (-) TimerEvent: {}
+[2.605978] (-) TimerEvent: {}
+[2.706246] (-) TimerEvent: {}
+[2.806627] (-) TimerEvent: {}
+[2.907005] (-) TimerEvent: {}
+[3.007374] (-) TimerEvent: {}
+[3.107655] (-) TimerEvent: {}
+[3.208038] (-) TimerEvent: {}
+[3.308411] (-) TimerEvent: {}
+[3.408829] (-) TimerEvent: {}
+[3.509201] (-) TimerEvent: {}
+[3.609572] (-) TimerEvent: {}
+[3.709961] (-) TimerEvent: {}
+[3.810333] (-) TimerEvent: {}
+[3.910710] (-) TimerEvent: {}
+[4.011025] (-) TimerEvent: {}
+[4.111218] (-) TimerEvent: {}
+[4.211407] (-) TimerEvent: {}
+[4.311591] (-) TimerEvent: {}
+[4.411812] (-) TimerEvent: {}
+[4.511989] (-) TimerEvent: {}
+[4.612179] (-) TimerEvent: {}
+[4.712359] (-) TimerEvent: {}
+[4.812536] (-) TimerEvent: {}
+[4.912771] (-) TimerEvent: {}
+[5.012957] (-) TimerEvent: {}
+[5.113140] (-) TimerEvent: {}
+[5.213329] (-) TimerEvent: {}
+[5.313515] (-) TimerEvent: {}
+[5.413702] (-) TimerEvent: {}
+[5.513894] (-) TimerEvent: {}
+[5.614082] (-) TimerEvent: {}
+[5.714266] (-) TimerEvent: {}
+[5.814457] (-) TimerEvent: {}
+[5.914642] (-) TimerEvent: {}
+[6.014835] (-) TimerEvent: {}
+[6.115025] (-) TimerEvent: {}
+[6.215242] (-) TimerEvent: {}
+[6.315532] (-) TimerEvent: {}
+[6.415747] (-) TimerEvent: {}
+[6.516073] (-) TimerEvent: {}
+[6.612923] (race_cpp) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking CXX executable race_sim_server_node\x1b[0m\n'}
+[6.616131] (-) TimerEvent: {}
+[6.716320] (-) TimerEvent: {}
+[6.816563] (-) TimerEvent: {}
+[6.916759] (-) TimerEvent: {}
+[6.925404] (race_cpp) StdoutLine: {'line': b'[100%] Built target race_sim_server_node\n'}
+[6.932249] (race_cpp) CommandEnded: {'returncode': 0}
+[6.932513] (race_cpp) JobProgress: {'identifier': 'race_cpp', 'progress': 'install'}
+[6.936838] (race_cpp) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/patrick/ugv_ws/ros2_ws/build/race_cpp'], 'cwd': '/home/patrick/ugv_ws/ros2_ws/build/race_cpp', 'env': OrderedDict([('PYTHON_BASIC_REPL', '1'), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'patrick'), ('SSH_CLIENT', '10.5.5.2 52396 22'), ('XDG_SESSION_TYPE', 'tty'), ('GIT_ASKPASS', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/extensions/git/dist/askpass.sh'), ('SHLVL', '3'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/bin/helpers/browser.sh'), ('MOTD_SHOWN', 'pam'), ('HOME', '/home/patrick'), ('OLDPWD', '/home/patrick/ugv_ws'), ('TERM_PROGRAM_VERSION', '1.108.2'), ('VSCODE_IPC_HOOK_CLI', '/run/user/1001/vscode-ipc-dfe199f2-cc76-42c0-bcea-ed34c1a16f81.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/node'), ('SSL_CERT_FILE', '/usr/lib/ssl/certs/ca-certificates.crt'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1001/bus'), ('COLORTERM', 'truecolor'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'patrick'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('TERM', 'xterm-256color'), ('XDG_SESSION_ID', '225'), ('PATH', '/home/patrick/.local/bin:/home/patrick/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/patrick/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/patrick/.vscode-server/cli/servers/Stable-c9d77990917f3102ada88be140d28b038d1dd7c7/server/bin/remote-cli:/home/patrick/.local/bin:/home/patrick/.local/bin:/opt/ros/humble/bin:/home/patrick/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/puppetlabs/bin'), ('XDG_RUNTIME_DIR', '/run/user/1001'), ('SSL_CERT_DIR', '/usr/lib/ssl/certs'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/home/patrick/.vscode-server/data/User/workspaceStorage/8923644c31e81c485380fe10cf6f30a7/ms-python.python/pythonrc.py'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/1001/vscode-git-502ec79434.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/home/patrick/ugv_ws/ros2_ws/build/race_cpp'), ('SSH_CONNECTION', '10.5.5.2 52396 192.168.0.240 22'), ('XDG_DATA_DIRS', '/usr/share/gnome:/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('MANPATH', ':/opt/puppetlabs/puppet/share/man'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble')]), 'shell': False}
+[6.941866] (race_cpp) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[6.942232] (race_cpp) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[6.942511] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/lib/race_cpp/race_sim_server_node\n'}
+[6.948418] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp//launch/traj.launch.py\n'}
+[6.952592] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/ament_index/resource_index/package_run_dependencies/race_cpp\n'}
+[6.958300] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/ament_index/resource_index/parent_prefix_path/race_cpp\n'}
+[6.962256] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/environment/ament_prefix_path.sh\n'}
+[6.966999] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/environment/ament_prefix_path.dsv\n'}
+[6.972445] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/environment/path.sh\n'}
+[6.978001] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/environment/path.dsv\n'}
+[6.983260] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/local_setup.bash\n'}
+[6.988582] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/local_setup.sh\n'}
+[6.993380] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/local_setup.zsh\n'}
+[6.997863] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/local_setup.dsv\n'}
+[7.001889] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/package.dsv\n'}
+[7.007381] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/ament_index/resource_index/packages/race_cpp\n'}
+[7.011523] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/cmake/race_cppConfig.cmake\n'}
+[7.015241] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/cmake/race_cppConfig-version.cmake\n'}
+[7.016817] (-) TimerEvent: {}
+[7.020656] (race_cpp) StdoutLine: {'line': b'-- Symlinking: /home/patrick/ugv_ws/ros2_ws/install/race_cpp/share/race_cpp/package.xml\n'}
+[7.026743] (race_cpp) CommandEnded: {'returncode': 0}
+[7.034678] (race_cpp) JobEnded: {'identifier': 'race_cpp', 'rc': 0}
+[7.035132] (-) EventReactorShutdown: {}

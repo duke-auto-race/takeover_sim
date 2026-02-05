@@ -53,7 +53,7 @@ sim_server::sim_server(
 void sim_server::input_callback(const std_msgs::msg::Float64MultiArray msg)
 {
     acc_input_bike <<
-        msg.data[0] * 4.0, 
+        msg.data[0] * 1.0, 
         msg.data[1] * 45.0 / 180.0 * M_PI;
 }
 

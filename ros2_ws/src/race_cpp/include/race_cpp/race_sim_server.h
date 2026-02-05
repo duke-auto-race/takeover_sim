@@ -61,8 +61,8 @@ class sim_server
         Eigen::VectorXd state_k_bike; // x, y, psi, v, beta
         Eigen::Vector2d acc_input_bike; // a, delta
 
-        double lf = 0.15;
-        double lr = 0.15;
+        double lf = 0.16;
+        double lr = 0.16;
 
         void input_callback(
             const std_msgs::msg::Float64MultiArray msg
@@ -72,6 +72,27 @@ class sim_server
 
         rclcpp::TimerBase::SharedPtr sim_timer;    
         void sim_timer_callback();
+
+        Eigen::Quaterniond rpy2q(const Eigen::Vector3d& rpy);
+        static geometry_msgs::msg::Quaternion quat_from_rpy(double roll, double pitch, double yaw)
+        {
+            geometry_msgs::msg::Quaternion q;
+            // convert half-angles
+            double hr = roll  * 0.5;
+            double hp = pitch * 0.5;
+            double hy = yaw   * 0.5;
+
+            double cr = std::cos(hr), sr = std::sin(hr);
+            double cp = std::cos(hp), sp = std::sin(hp);
+            double cy = std::cos(hy), sy = std::sin(hy);
+
+            q.w = cr*cp*cy + sr*sp*sy;
+            q.x = sr*cp*cy - cr*sp*sy;
+            q.y = cr*sp*cy + sr*cp*sy;
+            q.z = cr*cp*sy - sr*sp*cy;
+            return q;
+        }
+
 
         // sim noise
         std::default_random_engine gen;

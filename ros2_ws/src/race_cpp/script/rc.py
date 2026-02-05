@@ -68,10 +68,10 @@ class RCTeleopNode(Node):
                             self.channel1_value = self.clamp(self.channel1_value - self.step)
                             self.publish_values()
                         elif next2 == 'C':  # Right arrow
-                            self.channel2_value = self.clamp(self.channel2_value + self.step)
+                            self.channel2_value = self.clamp(self.channel2_value - self.step)
                             self.publish_values()
                         elif next2 == 'D':  # Left arrow
-                            self.channel2_value = self.clamp(self.channel2_value - self.step)
+                            self.channel2_value = self.clamp(self.channel2_value + self.step)
                             self.publish_values()
                 elif key == ' ':  # Space - reset
                     self.channel1_value = 0.0

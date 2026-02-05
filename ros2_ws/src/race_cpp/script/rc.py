@@ -11,30 +11,36 @@ import select
 class RCTeleopNode(Node):
     def __init__(self):
         super().__init__('rc_teleop_node')
-        
+
         self.rc_pub = self.create_publisher(Float64MultiArray, '/rc/virtual', 10)
-        
-        self.channel1_value = 0.0  
-        self.channel2_value = 0.0 
-        
-        # Step size for incremental control
-        self.step = 0.1
-        
+
+        self.channel1_value = 0.0
+        self.channel2_value = 0.0
+
+        # Step size for incremental control per second
+        self.step_per_sec = 2.0  # value per second
+
         self.get_logger().info('RC Teleop Node Started')
         self.get_logger().info('Use Arrow Keys:')
         self.get_logger().info('  Up/Down: Channel 1 (-1 to 1)')
         self.get_logger().info('  Left/Right: Channel 2 (-1 to 1)')
         self.get_logger().info('  Space: Reset both to 0')
         self.get_logger().info('  q: Quit')
-        
+
         # Save terminal settings
         self.settings = termios.tcgetattr(sys.stdin)
+
+        # Track last input time
+        self.last_input_time = None
+        self.active_key = None
         
-    def get_key(self):
-        """Get a single keypress from stdin"""
+    def get_key(self, timeout=0.1):
+        """Get a single keypress from stdin with timeout (seconds)"""
         tty.setraw(sys.stdin.fileno())
-        select.select([sys.stdin], [], [], 0)
-        key = sys.stdin.read(1)
+        rlist, _, _ = select.select([sys.stdin], [], [], timeout)
+        key = None
+        if rlist:
+            key = sys.stdin.read(1)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
         return key
     
@@ -52,34 +58,69 @@ class RCTeleopNode(Node):
     
     def run(self):
         """Main control loop"""
+        import time
         try:
+            self.last_input_time = time.time()
+            self.active_key = None
             while rclpy.ok():
-                key = self.get_key()
-                
-                # Check for escape sequences (arrow keys)
-                if key == '\x1b':  # ESC
-                    next1 = sys.stdin.read(1)
-                    if next1 == '[':
-                        next2 = sys.stdin.read(1)
-                        if next2 == 'A':  # Up arrow
-                            self.channel1_value = self.clamp(self.channel1_value + self.step)
-                            self.publish_values()
-                        elif next2 == 'B':  # Down arrow
-                            self.channel1_value = self.clamp(self.channel1_value - self.step)
-                            self.publish_values()
-                        elif next2 == 'C':  # Right arrow
-                            self.channel2_value = self.clamp(self.channel2_value - self.step)
-                            self.publish_values()
-                        elif next2 == 'D':  # Left arrow
-                            self.channel2_value = self.clamp(self.channel2_value + self.step)
-                            self.publish_values()
-                elif key == ' ':  # Space - reset
-                    self.channel1_value = 0.0
-                    self.channel2_value = 0.0
+                now = time.time()
+                key = self.get_key(timeout=0.1)
+
+                # If key is pressed
+                if key:
+                    self.last_input_time = now
+                    # Check for escape sequences (arrow keys)
+                    if key == '\x1b':  # ESC
+                        next1 = sys.stdin.read(1)
+                        if next1 == '[':
+                            next2 = sys.stdin.read(1)
+                            if next2 == 'A':  # Up arrow
+                                self.active_key = 'up'
+                            elif next2 == 'B':  # Down arrow
+                                self.active_key = 'down'
+                            elif next2 == 'C':  # Right arrow
+                                self.active_key = 'right'
+                            elif next2 == 'D':  # Left arrow
+                                self.active_key = 'left'
+                            else:
+                                self.active_key = None
+                        else:
+                            self.active_key = None
+                    elif key == ' ':  # Space - reset
+                        self.channel1_value = 0.0
+                        self.channel2_value = 0.0
+                        self.publish_values()
+                        self.active_key = None
+                    elif key == 'q' or key == '\x03':  # q or Ctrl+C
+                        break
+                    else:
+                        self.active_key = None
+                else:
+                    # No key pressed in this interval
+                    pass
+
+                # If active key is held, update values based on time held
+                if self.active_key:
+                    dt = 0.1  # seconds per loop
+                    step = self.step_per_sec * dt
+                    if self.active_key == 'up':
+                        self.channel1_value = self.clamp(self.channel1_value + step)
+                    elif self.active_key == 'down':
+                        self.channel1_value = self.clamp(self.channel1_value - step)
+                    elif self.active_key == 'right':
+                        self.channel2_value = self.clamp(self.channel2_value - step)
+                    elif self.active_key == 'left':
+                        self.channel2_value = self.clamp(self.channel2_value + step)
                     self.publish_values()
-                elif key == 'q' or key == '\x03':  # q or Ctrl+C
-                    break
-                    
+
+                # If no input for over 100 ms, reset values
+                if (now - self.last_input_time) > 0.1:
+                    if self.channel1_value != 0.0 or self.channel2_value != 0.0:
+                        self.channel1_value = 0.0
+                        self.channel2_value = 0.0
+                        self.publish_values()
+                    self.active_key = None
+
         except Exception as e:
             self.get_logger().error(f'Error: {str(e)}')
         finally:

@@ -45,6 +45,30 @@ ament_target_dependencies(race_sim_server_node
 )
 install(TARGETS race_sim_server_node DESTINATION lib/${PROJECT_NAME})
 
+
+# race_viz
+add_executable(race_viz_node
+	src/race_viz_node.cpp
+    src/race_viz.cpp
+)
+ament_target_dependencies(race_viz_node
+	rclcpp 
+	geometry_msgs
+	sensor_msgs
+	mavros_msgs
+	visualization_msgs
+)
+install(TARGETS race_viz_node DESTINATION lib/${PROJECT_NAME})
+
+###################################################################
+
+###################################################################
+# Install Python scripts
+install(PROGRAMS
+  script/rc.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ###################################################################
 install(
   DIRECTORY launch

@@ -15,8 +15,6 @@
 #define RAW_TRACK 0
 #define TRAJ_TRACK 1
 
-#include <std_msgs/msg/float64_multi_array.hpp>
-
 #include <random>
 
 class sim_server
@@ -47,28 +45,7 @@ class sim_server
             const Eigen::Vector4d& state_k,          // [x, y, vx, vy]
             const Eigen::Vector2d& acc_input         // [ax, ay]
         );
-
         Eigen::Vector4d state_k;
-
-
-        // bicycle simulator 4/Feb @yxy12102415 
-        Eigen::VectorXd bicycle_kinematic_fx(
-            double dt,
-            const Eigen::VectorXd& state_k,          // [x, y, vx, vy]
-            const Eigen::Vector2d& acc_input         // [ax, ay]
-        );
-
-        Eigen::VectorXd state_k_bike; // x, y, psi, v, beta
-        Eigen::Vector2d acc_input_bike; // a, delta
-
-        double lf = 0.15;
-        double lr = 0.15;
-
-        void input_callback(
-            const std_msgs::msg::Float64MultiArray msg
-        );
-
-        rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr input_sub;
 
         rclcpp::TimerBase::SharedPtr sim_timer;    
         void sim_timer_callback();
@@ -88,6 +65,9 @@ class sim_server
         rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr sim_vel_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_pub;
         void viz();
+        
+
+
         
     public:
         sim_server(std::shared_ptr<rclcpp::Node> node);

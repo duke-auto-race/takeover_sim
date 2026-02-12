@@ -66,6 +66,7 @@ install(TARGETS race_viz_node DESTINATION lib/${PROJECT_NAME})
 # Install Python scripts
 install(PROGRAMS
   script/rc.py
+  script/joy.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

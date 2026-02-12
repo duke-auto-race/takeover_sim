@@ -3,7 +3,7 @@
 sim_server::sim_server(
     std::shared_ptr<rclcpp::Node> node
 ) : _node(node)
-{\
+{
     input_sub = _node->create_subscription<std_msgs::msg::Float64MultiArray>(
         "/rc/virtual",
         qos_live,
@@ -29,6 +29,12 @@ sim_server::sim_server(
         "/sim_server/state_marker",
         10
     );
+
+    // rc_sub = _node->create_subscription<mavros_msgs::msg::RCIn>(
+    //     "/mavros/rc/in",
+    //     10,
+    //     std::bind(&sim_server::rcCallback, this, std::placeholders::_1)
+    // );
 
     state_k_bike.resize(5);
     state_k_bike.setZero();
@@ -186,13 +192,8 @@ void sim_server::viz()
     body_cube.pose.position.y = y;
     body_cube.pose.position.z = body_center_z;
 
-    // orientation from yaw only (vehicle assumed level)
     body_cube.pose.orientation = quat_from_rpy(0.0, 0.0, psi);
 
-    // Wheels (CYLINDER) - ROS CYLINDER axis is along local Z.
-    // We want wheel axis along vehicle lateral axis (vehicle Y). To do that:
-    // - rotate cylinder by +90deg about X so cylinder Z -> vehicle Y
-    // - then yaw by vehicle yaw (psi) (and steer for front wheels)
     visualization_msgs::msg::Marker wheels[4];
     for (int i=0;i<4;++i) {
         wheels[i].header = hdr;
@@ -287,123 +288,31 @@ void sim_server::viz()
     viz_pub->publish(ma);
 }
 
+void sim_server::rcCallback(const mavros_msgs::msg::RCIn::SharedPtr msg) 
+{
+    // switch here
+    // if (msg->channels.size() > 6 && msg->channels[6] < 2000) 
+    // {
+    //     std::fill(desired_manual.begin(), desired_manual.end(), 0.0);
+    // } 
+    // else if (msg->channels.size() > 1) {
+    //     double k = 100.0;
+    //     std::cout << msg->channels[1] << std::endl;
+    //     std::vector<double> vel = {
+    //         -k * (msg->channels[1] - 1515.0) / (2015.0 - 1015.0) * 2.0,
+    //         k * (msg->channels[0] - 1515.0) / (2015.0 - 1015.0) * 2.0};
+    //     std::cout<<"gan"<<std::endl;
+    //     std::cout<<vel[0]<<" "<<vel[1]<<std::endl<<std::endl;
+    //     if (vel[0] < 1.0 && vel[0] > -1.0)
+    //         vel[0] = 0.0;
 
+    //     if (vel[1] < 1.0 && vel[1] > -1.0)
+    //         vel[1] = 0.0;
 
-
-// void sim_server::viz()
-// {
-//     Eigen::Vector3d pos(
-//         state_k.x(),
-//         state_k.y(),
-//         follower_pose.pose.position.z
-//     );
-
-//     // Orientation (yaw toward 0,0,0)
-//     Eigen::Vector3d target(0.0, 0.0, 0.0);
-//     Eigen::Vector3d dir = (target - pos).normalized();
-//     double yaw = 45.0/180*M_PI;
-
-//     // tf2::Quaternion q;
-//     // q.setRPY(0.0, 0.0, yaw);
-
-//     // -------------------------------------------------------------
-//     // CROSS (2 line markers)
-//     // -------------------------------------------------------------
-//     visualization_msgs::msg::Marker line1;
-//     line1.header.frame_id = "map";
-//     line1.header.stamp = _node->get_clock()->now();
-//     line1.ns = "uav_cross";
-//     line1.id = 0;
-//     line1.type = visualization_msgs::msg::Marker::LINE_STRIP;
-//     line1.action = visualization_msgs::msg::Marker::ADD;
-//     line1.scale.x = 0.15;   // Line thickness
-//     line1.color.r = 1.0;
-//     line1.color.g = 0.0;
-//     line1.color.b = 1.0;
-//     line1.color.a = 1.0;
-
-//     // Arm half-length
-//     double L = 0.5;
-
-//     // Transform arm endpoints by yaw
-//     Eigen::Vector2d a1_local(L, 0);
-//     Eigen::Vector2d a2_local(-L, 0);
-//     Eigen::Vector2d b1_local(0, L);
-//     Eigen::Vector2d b2_local(0, -L);
-
-//     Eigen::Rotation2Dd R(yaw);
-
-//     // Line 1 points
-//     geometry_msgs::msg::Point p;
-//     Eigen::Vector2d a1 = R * a1_local;
-//     Eigen::Vector2d a2 = R * a2_local;
-
-//     p.x = pos.x() + a1.x(); p.y = pos.y() + a1.y(); p.z = pos.z(); 
-//     line1.points.push_back(p);
-//     p.x = pos.x() + a2.x(); p.y = pos.y() + a2.y(); 
-//     line1.points.push_back(p);
-
-
-//     // Line 2
-//     visualization_msgs::msg::Marker line2 = line1;
-//     line2.id = 1;
-//     line2.points.clear();
-
-//     Eigen::Vector2d b1 = R * b1_local;
-//     Eigen::Vector2d b2 = R * b2_local;
-
-//     p.x = pos.x() + b1.x(); p.y = pos.y() + b1.y(); p.z = pos.z();
-//     line2.points.push_back(p);
-//     p.x = pos.x() + b2.x(); p.y = pos.y() + b2.y();
-//     line2.points.push_back(p);
-
-//     // -------------------------------------------------------------
-//     // MOTOR SPHERES (4 circles)
-//     // -------------------------------------------------------------
-//     std::vector<visualization_msgs::msg::Marker> motors(4);
-
-//     for (int i = 0; i < 4; i++)
-//     {
-//         motors[i].header = line1.header;
-//         motors[i].ns = "uav_motors";
-//         motors[i].id = i + 10;
-//         motors[i].type = visualization_msgs::msg::Marker::SPHERE;
-//         motors[i].action = visualization_msgs::msg::Marker::ADD;
-
-//         motors[i].scale.x = 0.3;   // sphere size
-//         motors[i].scale.y = 0.3;
-//         motors[i].scale.z = 0.05;
-
-//         motors[i].color.r = 0.0f;
-//         motors[i].color.g = 0.5f;
-//         motors[i].color.b = 1.0f;
-//         motors[i].color.a = 1.0f;
-//     }
-
-//     // 4 arm tip positions
-//     Eigen::Vector2d arm_tip[4] = { a1, a2, b1, b2 };
-
-//     for (int i = 0; i < 4; i++)
-//     {
-//         motors[i].pose.position.x = pos.x() + arm_tip[i].x();
-//         motors[i].pose.position.y = pos.y() + arm_tip[i].y();
-//         motors[i].pose.position.z = pos.z();
-
-//         motors[i].pose.orientation.w = 1.0;
-//         motors[i].pose.orientation.x = 0.0;
-//         motors[i].pose.orientation.y = 0.0;
-//         motors[i].pose.orientation.z = 0.0;
-//     }
-
-//     // -------------------------------------------------------------
-//     // Publish
-//     // -------------------------------------------------------------
-//     visualization_msgs::msg::MarkerArray ma;
-//     ma.markers.push_back(line1);
-//     ma.markers.push_back(line2);
-//     for (auto &m : motors)
-//         ma.markers.push_back(m);
-//     viz_pub->publish(ma);
-
-// }
-
+    //     // if (vel[0] < 0.1)
+    //     //     vel[0] = 0.0;
+    //     std::cout<<vel[0]<<" "<<vel[1]<<std::endl<<std::endl;
+        
+    //     // desired_manual = differentialIK(vel);
+    // }
+}

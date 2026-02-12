@@ -18,6 +18,7 @@
 #include <std_msgs/msg/float64_multi_array.hpp>
 
 #include <random>
+#include <mavros_msgs/msg/rc_in.hpp>
 
 class sim_server
 {
@@ -108,7 +109,12 @@ class sim_server
         rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr sim_pos_pub;
         rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr sim_vel_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_pub;
+
+        rclcpp::Publisher<mavros_msgs::msg::RCIn>::SharedPtr rc_sub;
+
         void viz();
+
+        void rcCallback(const mavros_msgs::msg::RCIn::SharedPtr msg);
         
     public:
         sim_server(std::shared_ptr<rclcpp::Node> node);

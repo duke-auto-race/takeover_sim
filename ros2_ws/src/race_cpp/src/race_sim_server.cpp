@@ -30,11 +30,11 @@ sim_server::sim_server(
         10
     );
 
-    // rc_sub = _node->create_subscription<mavros_msgs::msg::RCIn>(
-    //     "/mavros/rc/in",
-    //     10,
-    //     std::bind(&sim_server::rcCallback, this, std::placeholders::_1)
-    // );
+    rc_sub = _node->create_subscription<std_msgs::msg::Float32MultiArray>(
+        "/rc/channels",
+        10,
+        std::bind(&sim_server::rcCallback, this, std::placeholders::_1)
+    );
 
     state_k_bike.resize(5);
     state_k_bike.setZero();
@@ -94,6 +94,49 @@ Eigen::Quaterniond sim_server::rpy2q(const Eigen::Vector3d& rpy)
 // bicycle simulator 4/Feb @yxy12102415 
 // ref - https://nuhuo08.github.io/control/IV_KinematicMPC_jason.pdf 
 Eigen::VectorXd sim_server::bicycle_kinematic_fx(
+    double dt,
+    const Eigen::VectorXd& state_k,          // x, y, psi, v, beta
+    const Eigen::Vector2d& acc_input         // a, delta
+)
+{
+    using namespace std;
+    
+    auto f = [&](const Eigen::VectorXd& s) 
+    {
+        using namespace std;
+        double v = s[3];
+        double psi = s[2];
+        double beta = s[4];
+        double a = acc_input[0];
+        double delta = acc_input[1];
+
+
+        Eigen::VectorXd dx;
+        dx.resize(5);
+        dx << v * cos(psi + beta),
+              v * sin(psi + beta),
+              v / lr * sin(beta),
+              a,
+              atan(lr / (lf + lr) * tan(delta))
+        ;
+        return dx;
+    };
+
+    Eigen::VectorXd k1 = f(state_k);
+    Eigen::VectorXd k2 = f(state_k + 0.5 * dt * k1);
+    Eigen::VectorXd k3 = f(state_k + 0.5 * dt * k2);
+    Eigen::VectorXd k4 = f(state_k + dt * k3);
+
+    Eigen::VectorXd state_next =
+        state_k + (dt / 6.0) * (k1 + 2.0*k2 + 2.0*k3 + k4);
+
+    state_next[0] += noise_dist(gen);
+    state_next[1] += noise_dist(gen);
+
+    return state_next;
+}
+
+Eigen::VectorXd sim_server::bicycle_dynamic_fx(
     double dt,
     const Eigen::VectorXd& state_k,          // x, y, psi, v, beta
     const Eigen::Vector2d& acc_input         // a, delta
@@ -288,31 +331,10 @@ void sim_server::viz()
     viz_pub->publish(ma);
 }
 
-void sim_server::rcCallback(const mavros_msgs::msg::RCIn::SharedPtr msg) 
+void sim_server::rcCallback(const std_msgs::msg::Float32MultiArray::ConstPtr msg)
 {
-    // switch here
-    // if (msg->channels.size() > 6 && msg->channels[6] < 2000) 
-    // {
-    //     std::fill(desired_manual.begin(), desired_manual.end(), 0.0);
-    // } 
-    // else if (msg->channels.size() > 1) {
-    //     double k = 100.0;
-    //     std::cout << msg->channels[1] << std::endl;
-    //     std::vector<double> vel = {
-    //         -k * (msg->channels[1] - 1515.0) / (2015.0 - 1015.0) * 2.0,
-    //         k * (msg->channels[0] - 1515.0) / (2015.0 - 1015.0) * 2.0};
-    //     std::cout<<"gan"<<std::endl;
-    //     std::cout<<vel[0]<<" "<<vel[1]<<std::endl<<std::endl;
-    //     if (vel[0] < 1.0 && vel[0] > -1.0)
-    //         vel[0] = 0.0;
-
-    //     if (vel[1] < 1.0 && vel[1] > -1.0)
-    //         vel[1] = 0.0;
-
-    //     // if (vel[0] < 0.1)
-    //     //     vel[0] = 0.0;
-    //     std::cout<<vel[0]<<" "<<vel[1]<<std::endl<<std::endl;
-        
-    //     // desired_manual = differentialIK(vel);
-    // }
+    acc_input_bike <<
+        msg->data[2] * 1.0, 
+        msg->data[0] * 20.0 / 180.0 * M_PI;
+    
 }

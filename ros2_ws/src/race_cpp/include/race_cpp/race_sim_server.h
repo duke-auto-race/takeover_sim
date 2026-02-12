@@ -20,6 +20,10 @@
 #include <random>
 #include <mavros_msgs/msg/rc_in.hpp>
 
+#include <std_msgs/msg/float32_multi_array.hpp>
+// from std_msgs.msg import Float32MultiArray
+
+
 class sim_server
 {
     private:
@@ -54,6 +58,12 @@ class sim_server
 
         // bicycle simulator 4/Feb @yxy12102415 
         Eigen::VectorXd bicycle_kinematic_fx(
+            double dt,
+            const Eigen::VectorXd& state_k,          // [x, y, vx, vy]
+            const Eigen::Vector2d& acc_input         // [ax, ay]
+        );
+
+        Eigen::VectorXd bicycle_dynamic_fx(
             double dt,
             const Eigen::VectorXd& state_k,          // [x, y, vx, vy]
             const Eigen::Vector2d& acc_input         // [ax, ay]
@@ -110,11 +120,11 @@ class sim_server
         rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr sim_vel_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_pub;
 
-        rclcpp::Publisher<mavros_msgs::msg::RCIn>::SharedPtr rc_sub;
+        rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr rc_sub;
 
         void viz();
 
-        void rcCallback(const mavros_msgs::msg::RCIn::SharedPtr msg);
+        void rcCallback(const std_msgs::msg::Float32MultiArray::ConstPtr msg);
         
     public:
         sim_server(std::shared_ptr<rclcpp::Node> node);

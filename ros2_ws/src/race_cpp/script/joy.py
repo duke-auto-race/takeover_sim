@@ -13,7 +13,7 @@ JS_EVENT_INIT = 0x80
 
 DEVICE_DEFAULT = "/dev/input/js0"
 PUBLISH_HZ_DEFAULT = 50.0  # Hz
-TOPIC_DEFAULT = "/channels"  # publishes [ch0, ch2]
+TOPIC_DEFAULT = "/rc/channels"  # publishes [ch0, ch2]
 
 
 class JoystickReader(threading.Thread):
@@ -94,14 +94,17 @@ class JsPublisherNode(Node):
     def timer_callback(self):
         # pack channel 0 and channel 2 into a Float32MultiArray
         val0 = self.js.get_axis_normalized(0)
+        val1 = self.js.get_axis_normalized(1)
         val2 = self.js.get_axis_normalized(2)
         
         val0 = -val0
         val2 = (-val2+1)/2
-        # print("hi=")
         
+        if val1 > 0:
+            val1 = 0
+                    
         msg = Float32MultiArray()
-        msg.data = [float(val0), float(val2)]
+        msg.data = [float(val0), float(val1), float(val2)]
         self.pub.publish(msg)
 
     def destroy_node(self):

@@ -28,10 +28,10 @@ def generate_launch_description():
             name='race_sim_server_node',
             output='screen'
         ),
-        # Node(
-        #     package='race_cpp',
-        #     executable='rc.py',
-        #     name='rc',
-        #     output='screen'
-        # ),
+        Node(
+            package='race_cpp',
+            executable='joy.py',
+            name='rc',
+            output='screen'
+        ),
     ])

@@ -25,6 +25,11 @@ sim_server::sim_server(
         10
     );
 
+    sim_vel_x_pub = _node->create_publisher<std_msgs::msg::Float64>(
+        "/sim_server/vel_x",
+        10
+    );
+
     viz_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>(
         "/sim_server/state_marker",
         10
@@ -46,7 +51,7 @@ sim_server::sim_server(
     );
 
     lidar_scan_pub = _node->create_publisher<sensor_msgs::msg::LaserScan>(
-        "/scan",
+        "/sim_server/scan",
         10
     );
 
@@ -77,6 +82,9 @@ sim_server::sim_server(
 
     _node->declare_parameter("ai_vel", 0.0);
     ai_velocity = _node->get_parameter("ai_vel").as_double();
+
+    _node->declare_parameter("auto", 0.0);
+    ai_velocity = _node->get_parameter("ai_vel").as_double();
     std::cout<<ai_velocity<<std::endl;
 
     // Publish track once at startup
@@ -88,6 +96,8 @@ void sim_server::input_callback(const std_msgs::msg::Float64MultiArray msg)
     acc_input_bike <<
         msg.data[0] * 1.0, 
         msg.data[1] * 20.0 / 180.0 * M_PI;
+
+    
 }
 
 void sim_server::sim_timer_callback()
@@ -121,6 +131,29 @@ void sim_server::sim_timer_callback()
 
 
     sim_pos_pub->publish(temp);
+
+    // Publish velocity
+    geometry_msgs::msg::TwistStamped vel_msg;
+    vel_msg.header.frame_id = "base_link";
+    vel_msg.header.stamp = current_time;
+    // state_k_bike: [x, y, psi, v, beta]
+    // Velocity in body frame: v is forward speed, beta is slip angle
+    double v = state_k_bike(3);
+    double beta = state_k_bike(4);
+    // Transform velocity to body frame considering slip angle
+    vel_msg.twist.linear.x = v * std::cos(beta);  // Forward velocity
+    vel_msg.twist.linear.y = v * std::sin(beta);  // Lateral velocity (slip)
+    vel_msg.twist.linear.z = 0.0;
+    // Angular velocity is rate of change of heading (approximated from steering)
+    vel_msg.twist.angular.x = 0.0;
+    vel_msg.twist.angular.y = 0.0;
+    vel_msg.twist.angular.z = v * std::tan(acc_input_bike(1)) / (lf + lr);  // Yaw rate
+    sim_vel_pub->publish(vel_msg);
+
+    // Publish x-axis velocity (forward velocity in base_link frame)
+    std_msgs::msg::Float64 vel_x_msg;
+    vel_x_msg.data = v * std::cos(beta);  // Forward velocity component
+    sim_vel_x_pub->publish(vel_x_msg);
 
     // Broadcast TF transform
     geometry_msgs::msg::TransformStamped transform;

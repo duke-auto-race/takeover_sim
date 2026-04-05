@@ -70,6 +70,7 @@ install(TARGETS race_viz_node DESTINATION lib/${PROJECT_NAME})
 install(PROGRAMS
   script/rc.py
   script/joy.py
+  script/pd_track.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

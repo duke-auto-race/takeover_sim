@@ -22,6 +22,7 @@
 #define TRAJ_TRACK 1
 
 #include <std_msgs/msg/float64_multi_array.hpp>
+#include <std_msgs/msg/float64.hpp>
 
 #include <random>
 #include <mavros_msgs/msg/rc_in.hpp>
@@ -145,6 +146,7 @@ class sim_server
         // rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr sim_vel_pub;
         rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr sim_pos_pub;
         rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr sim_vel_pub;
+        rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr sim_vel_x_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr track_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ai_viz_pub;

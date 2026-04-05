@@ -71,6 +71,8 @@ install(PROGRAMS
   script/rc.py
   script/joy.py
   script/pd_track.py
+  script/mppi_takeover.py
+
   DESTINATION lib/${PROJECT_NAME}
 )
 

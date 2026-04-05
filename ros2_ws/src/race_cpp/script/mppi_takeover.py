@@ -4,7 +4,12 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64MultiArray, Float64
+from visualization_msgs.msg import Marker, MarkerArray
+from geometry_msgs.msg import Point
+from std_msgs.msg import ColorRGBA
 import numpy as np
+import torch
+import torch.distributions as dist
 
 class LidarFollowerNode(Node):
     def __init__(self):
@@ -12,6 +17,9 @@ class LidarFollowerNode(Node):
 
         # Publisher for control commands
         self.rc_pub = self.create_publisher(Float64MultiArray, '/rc/virtual', 10)
+        
+        # Publisher for visualization markers
+        self.marker_pub = self.create_publisher(MarkerArray, '/mppi_rollouts', 10)
 
         # Subscriber for LiDAR scan
         self.scan_sub = self.create_subscription(
@@ -43,6 +51,22 @@ class LidarFollowerNode(Node):
         self.declare_parameter('min_cluster_size', 5)   # Minimum points to form a valid cluster
         self.declare_parameter('max_cluster_gap', 0.5)  # Maximum range gap within cluster (meters)
         
+        # MPPI parameters
+        self.declare_parameter('mppi_num_samples', 1000)  # Number of parallel trajectory samples
+        self.declare_parameter('mppi_horizon', 20)        # Planning horizon steps
+        self.declare_parameter('mppi_dt', 0.1)            # Time step for prediction (seconds)
+        self.declare_parameter('mppi_lambda', 1.0)        # Temperature parameter
+        self.declare_parameter('mppi_sigma_throttle', 0.3)  # Throttle noise std
+        self.declare_parameter('mppi_sigma_steering', 0.5)  # Steering noise std
+        self.declare_parameter('mppi_cost_distance', 1.0)   # Cost weight for distance to opponent
+        self.declare_parameter('mppi_cost_lateral', 2.0)    # Cost weight for lateral offset
+        self.declare_parameter('mppi_cost_velocity', 0.5)   # Cost weight for velocity tracking
+        self.declare_parameter('mppi_cost_control', 0.01)   # Cost weight for control effort
+        self.declare_parameter('mppi_takeover_distance', 3.0)  # Target distance for takeover
+        self.declare_parameter('distance_error_threshold', 2.0)  # Distance error threshold for switching
+        self.declare_parameter('distance_maintain_time', 10.0)   # Time to maintain distance before MPPI
+        self.declare_parameter('max_takeover_distance', 8.0)     # Maximum distance to allow MPPI takeover
+        
         self.mode = self.get_parameter('mode').value
         self.target_distance = self.get_parameter('target_distance').value
         self.desired_velocity = self.get_parameter('desired_velocity').value
@@ -55,11 +79,37 @@ class LidarFollowerNode(Node):
         self.kp_velocity = self.get_parameter('kp_velocity').value
         self.min_cluster_size = self.get_parameter('min_cluster_size').value
         self.max_cluster_gap = self.get_parameter('max_cluster_gap').value
+        
+        # MPPI parameters
+        self.mppi_num_samples = self.get_parameter('mppi_num_samples').value
+        self.mppi_horizon = self.get_parameter('mppi_horizon').value
+        self.mppi_dt = self.get_parameter('mppi_dt').value
+        self.mppi_lambda = self.get_parameter('mppi_lambda').value
+        self.mppi_sigma_throttle = self.get_parameter('mppi_sigma_throttle').value
+        self.mppi_sigma_steering = self.get_parameter('mppi_sigma_steering').value
+        self.mppi_cost_distance = self.get_parameter('mppi_cost_distance').value
+        self.mppi_cost_lateral = self.get_parameter('mppi_cost_lateral').value
+        self.mppi_cost_velocity = self.get_parameter('mppi_cost_velocity').value
+        self.mppi_cost_control = self.get_parameter('mppi_cost_control').value
+        self.mppi_takeover_distance = self.get_parameter('mppi_takeover_distance').value
+        self.distance_error_threshold = self.get_parameter('distance_error_threshold').value
+        self.distance_maintain_time = self.get_parameter('distance_maintain_time').value
+        self.max_takeover_distance = self.get_parameter('max_takeover_distance').value
 
         # State variables
         self.current_velocity = 0.0
         self.last_distance_error = 0.0
         self.last_time = None
+        
+        # MPPI state tracking
+        self.mppi_mode = False
+        self.distance_maintain_start = None
+        self.opponent_distance = None
+        self.opponent_angle = None
+        
+        # PyTorch device
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.get_logger().info(f'Using device: {self.device}')
 
         self.get_logger().info('LiDAR Follower Node Started')
         self.get_logger().info(f'Mode: {self.mode}')
@@ -67,6 +117,244 @@ class LidarFollowerNode(Node):
         self.get_logger().info(f'Desired velocity: {self.desired_velocity} m/s')
         self.get_logger().info(f'Lookahead angle: ±{self.lookahead_angle}°')
         self.get_logger().info(f'Cluster detection: min_size={self.min_cluster_size}, max_gap={self.max_cluster_gap}m')
+        self.get_logger().info(f'MPPI: samples={self.mppi_num_samples}, horizon={self.mppi_horizon}, dt={self.mppi_dt}s')
+    
+    def publish_trajectories_visualization(self, states, weights):
+        """
+        Publish trajectory rollouts as RViz markers
+        states: [num_samples, horizon+1, 4] (x, y, theta, v)
+        weights: [num_samples] normalized weights for each trajectory
+        """
+        marker_array = MarkerArray()
+        
+        # Convert to numpy for easier manipulation
+        states_np = states.cpu().numpy()
+        weights_np = weights.cpu().numpy()
+        
+        # Visualize a subset of trajectories (top weighted ones + random samples)
+        num_viz = min(50, self.mppi_num_samples)  # Visualize top 50 trajectories
+        
+        # Get indices of top weighted trajectories
+        top_indices = np.argsort(weights_np)[-num_viz:]
+        
+        for idx, traj_idx in enumerate(top_indices):
+            marker = Marker()
+            marker.header.frame_id = "base_link"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "mppi_trajectories"
+            marker.id = idx
+            marker.type = Marker.LINE_STRIP
+            marker.action = Marker.ADD
+            
+            # Scale line width based on weight
+            weight = weights_np[traj_idx]
+            marker.scale.x = 0.01 + 0.05 * weight / weights_np.max()
+            
+            # Color based on weight (blue=low weight, green=medium, red=high weight)
+            color = ColorRGBA()
+            if weight < weights_np.max() * 0.3:
+                # Blue for low weight
+                color.r = 0.0
+                color.g = 0.5
+                color.b = 1.0
+                color.a = 0.3
+            elif weight < weights_np.max() * 0.7:
+                # Green for medium weight
+                color.r = 0.0
+                color.g = 1.0
+                color.b = 0.0
+                color.a = 0.5
+            else:
+                # Red for high weight (best trajectories)
+                color.r = 1.0
+                color.g = 0.0
+                color.b = 0.0
+                color.a = 0.8
+            
+            marker.color = color
+            
+            # Add points along trajectory
+            for t in range(states_np.shape[1]):
+                point = Point()
+                point.x = float(states_np[traj_idx, t, 0])  # x position
+                point.y = float(states_np[traj_idx, t, 1])  # y position
+                point.z = 0.1  # Slightly above ground
+                marker.points.append(point)
+            
+            marker_array.markers.append(marker)
+        
+        # Add marker for optimal trajectory (weighted mean)
+        optimal_marker = Marker()
+        optimal_marker.header.frame_id = "ego_racecar/base_link"
+        optimal_marker.header.stamp = self.get_clock().now().to_msg()
+        optimal_marker.ns = "mppi_optimal"
+        optimal_marker.id = 0
+        optimal_marker.type = Marker.LINE_STRIP
+        optimal_marker.action = Marker.ADD
+        optimal_marker.scale.x = 0.08  # Thicker line
+        
+        # Yellow color for optimal path
+        optimal_color = ColorRGBA()
+        optimal_color.r = 1.0
+        optimal_color.g = 1.0
+        optimal_color.b = 0.0
+        optimal_color.a = 1.0
+        optimal_marker.color = optimal_color
+        
+        # Compute weighted mean trajectory
+        weights_expanded = weights_np[:, np.newaxis, np.newaxis]
+        optimal_traj = np.sum(weights_expanded * states_np, axis=0)
+        
+        for t in range(optimal_traj.shape[0]):
+            point = Point()
+            point.x = float(optimal_traj[t, 0])
+            point.y = float(optimal_traj[t, 1])
+            point.z = 0.15  # Slightly higher than other trajectories
+            optimal_marker.points.append(point)
+        
+        marker_array.markers.append(optimal_marker)
+        
+        # Publish the marker array
+        self.marker_pub.publish(marker_array)
+    
+    def mppi_dynamics(self, state, control):
+        """
+        Simple kinematic bicycle model for forward prediction
+        state: [x, y, theta, v] (position, heading, velocity)
+        control: [throttle, steering]
+        Returns: next state
+        """
+        x, y, theta, v = state[:, 0], state[:, 1], state[:, 2], state[:, 3]
+        throttle, steering = control[:, 0], control[:, 1]
+        
+        # Simple dynamics
+        # Acceleration from throttle (simplified)
+        a = throttle * 5.0  # max acceleration ~5 m/s^2
+        
+        # Update velocity
+        v_next = torch.clamp(v + a * self.mppi_dt, 0.0, 20.0)
+        
+        # Update heading (steering affects heading rate)
+        # steering is in [-1, 1], mapped to max ±20° in sim
+        max_steering_angle = np.deg2rad(20.0)
+        delta = steering * max_steering_angle
+        
+        # Wheelbase (approximate)
+        L = 0.3
+        theta_next = theta + (v * torch.tan(delta) / L) * self.mppi_dt
+        
+        # Update position
+        x_next = x + v * torch.cos(theta) * self.mppi_dt
+        y_next = y + v * torch.sin(theta) * self.mppi_dt
+        
+        return torch.stack([x_next, y_next, theta_next, v_next], dim=1)
+    
+    def mppi_cost(self, states, controls, opponent_x, opponent_y):
+        """
+        Compute cost for each trajectory sample
+        states: [num_samples, horizon+1, 4] (x, y, theta, v)
+        controls: [num_samples, horizon, 2] (throttle, steering)
+        opponent_x, opponent_y: opponent position in ego frame
+        """
+        num_samples = states.shape[0]
+        horizon = controls.shape[1]
+        
+        # Initialize total cost
+        total_cost = torch.zeros(num_samples, device=self.device)
+        
+        # Opponent position in global frame (ego frame)
+        opp_dist = torch.sqrt(opponent_x**2 + opponent_y**2)
+        opp_angle = torch.atan2(opponent_y, opponent_x)
+        
+        # Cost over horizon
+        for t in range(horizon):
+            x = states[:, t, 0]
+            y = states[:, t, 1]
+            theta = states[:, t, 2]
+            v = states[:, t, 3]
+            
+            throttle = controls[:, t, 0]
+            steering = controls[:, t, 1]
+            
+            # 1. Distance to opponent cost (want to close gap for takeover)
+            # Predict opponent position (assuming opponent moves straight)
+            opp_x_pred = opponent_x + opp_dist * torch.cos(opp_angle) * t * self.mppi_dt * 0.5
+            opp_y_pred = opponent_y + opp_dist * torch.sin(opp_angle) * t * self.mppi_dt * 0.5
+            
+            dist_to_opp = torch.sqrt((x - opp_x_pred)**2 + (y - opp_y_pred)**2)
+            distance_cost = self.mppi_cost_distance * (dist_to_opp - self.mppi_takeover_distance)**2
+            
+            # 2. Lateral offset cost (stay behind opponent, minimize lateral deviation)
+            lateral_cost = self.mppi_cost_lateral * y**2
+            
+            # 3. Velocity cost (maintain high speed for takeover)
+            desired_v = self.desired_velocity * 1.2  # Slightly faster for takeover
+            velocity_cost = self.mppi_cost_velocity * (v - desired_v)**2
+            
+            # 4. Control effort cost (smooth controls)
+            control_cost = self.mppi_cost_control * (throttle**2 + steering**2)
+            
+            # Sum costs
+            total_cost += distance_cost + lateral_cost + velocity_cost + control_cost
+        
+        return total_cost
+    
+    def mppi_control(self, current_state, opponent_x, opponent_y):
+        """
+        MPPI controller using PyTorch parallel sampling
+        current_state: [x, y, theta, v] current ego state
+        opponent_x, opponent_y: opponent position in ego frame
+        Returns: optimal (throttle, steering)
+        """
+        # Convert to torch tensors
+        state = torch.tensor(current_state, dtype=torch.float32, device=self.device)
+        opp_x = torch.tensor(opponent_x, dtype=torch.float32, device=self.device)
+        opp_y = torch.tensor(opponent_y, dtype=torch.float32, device=self.device)
+        
+        # Sample control sequences (num_samples x horizon x 2)
+        throttle_samples = torch.randn(
+            self.mppi_num_samples, self.mppi_horizon, device=self.device
+        ) * self.mppi_sigma_throttle
+        
+        steering_samples = torch.randn(
+            self.mppi_num_samples, self.mppi_horizon, device=self.device
+        ) * self.mppi_sigma_steering
+        
+        # Clip controls to valid range
+        throttle_samples = torch.clamp(throttle_samples, -0.5, 1.0)
+        steering_samples = torch.clamp(steering_samples, -1.0, 1.0)
+        
+        controls = torch.stack([throttle_samples, steering_samples], dim=2)
+        
+        # Rollout trajectories in parallel
+        states = torch.zeros(
+            self.mppi_num_samples, self.mppi_horizon + 1, 4, device=self.device
+        )
+        states[:, 0, :] = state  # Initial state for all samples
+        
+        # Forward simulate all trajectories
+        for t in range(self.mppi_horizon):
+            states[:, t + 1, :] = self.mppi_dynamics(states[:, t, :], controls[:, t, :])
+        
+        # Compute costs for all trajectories
+        costs = self.mppi_cost(states, controls, opp_x, opp_y)
+        
+        # Compute weights using softmax (temperature-based)
+        weights = torch.softmax(-costs / self.mppi_lambda, dim=0)
+        
+        # Visualize trajectories in RViz
+        self.publish_trajectories_visualization(states, weights)
+        
+        # Compute optimal control as weighted average
+        optimal_control = torch.sum(
+            weights.unsqueeze(1).unsqueeze(2) * controls, dim=0
+        )
+        
+        # Return first control action
+        throttle = optimal_control[0, 0].cpu().item()
+        steering = optimal_control[0, 1].cpu().item()
+        
+        return throttle, steering
     
     def vel_x_callback(self, msg: Float64):
         """Update current velocity from ego vehicle"""
@@ -149,8 +437,8 @@ class LidarFollowerNode(Node):
         left_dist = np.mean(left_ranges) if len(left_ranges) > 0 else float('inf')
         right_dist = np.mean(right_ranges) if len(right_ranges) > 0 else float('inf')
         
-        self.get_logger().info(f"{left_dist}")
-        self.get_logger().info(f"{right_dist}")
+        # self.get_logger().info(f"{left_dist}")
+        # self.get_logger().info(f"{right_dist}")
         
         # Steer to stay centered between boundaries
         # Positive steering if right side is closer (steer left)
@@ -214,27 +502,26 @@ class LidarFollowerNode(Node):
             self.follow_track(ranges, angles, valid_mask)
             return
         
+        # If only 1 or 2 clusters, likely just walls - no opponent detection
+        if len(clusters) <= 2:
+            self.get_logger().info(f'Only {len(clusters)} cluster(s) - No opponent detected, following track')
+            self.follow_track(ranges, angles, valid_mask)
+            return
+        
         # Find the best cluster (closest centroid, or largest cluster near center)
         # Prefer clusters that are more centered (smaller angle) and closer
         best_cluster = None
         best_score = float('inf')
         
+        # If 3+ clusters, choose the smallest one (likely the opponent car vs walls)
         for cluster_indices in clusters:
             centroid_range, centroid_angle, cluster_size = self.get_cluster_centroid(
                 ranges, angles, cluster_indices
             )
             
-            # Skip large clusters - likely walls or track boundaries
-            if cluster_size > 100:
-                continue
-            
-            # Score based on: distance + angle penalty
-            # Prefer centered, close clusters
-            angle_penalty = 2.0 * abs(centroid_angle)  # Penalize off-center targets
-            score = centroid_range + angle_penalty
-            
-            if score < best_score:
-                best_score = score
+            # Score based on cluster size (smallest is best for opponent detection)
+            if cluster_size < best_score:
+                best_score = cluster_size
                 best_cluster = (centroid_range, centroid_angle, cluster_size)
         
         if best_cluster is None:
@@ -245,34 +532,93 @@ class LidarFollowerNode(Node):
         
         detected_distance, target_angle, cluster_size = best_cluster
         
-        # Log opponent detection
-        self.get_logger().info(f'OPPONENT CAR DETECTED - Tracking target')
+        # Update opponent tracking state
+        self.opponent_distance = detected_distance
+        self.opponent_angle = target_angle
         
-        # Compute steering command
-        # Proportional control: steer towards the target
-        # Normalize steering to [-1, 1] range (will be scaled by 20° in sim_server)
-        steering = self.kp_steering * target_angle
-        steering = np.clip(steering, -1.0, 1.0)
+        # Check if distance error is within threshold
+        distance_error = abs(detected_distance - self.target_distance)
         
-        # Compute throttle command
-        # PD control based on distance error (no velocity tracking during opponent following)
-        distance_error = detected_distance - self.target_distance
+        # Track how long we've maintained the target distance
+        if distance_error <= self.distance_error_threshold:
+            if self.distance_maintain_start is None:
+                self.distance_maintain_start = current_time
+                self.get_logger().info('Started tracking distance maintenance')
+            else:
+                maintain_duration = (current_time - self.distance_maintain_start).nanoseconds / 1e9
+                
+                # Switch to MPPI mode after maintaining distance for specified time
+                # AND only if within max_takeover_distance
+                if maintain_duration >= self.distance_maintain_time and not self.mppi_mode and detected_distance <= self.max_takeover_distance:
+                    self.mppi_mode = True
+                    self.get_logger().info('=' * 60)
+                    self.get_logger().info('SWITCHING TO MPPI TAKEOVER MODE!')
+                    self.get_logger().info('=' * 60)
+        else:
+            # Reset if we lose distance maintenance
+            if self.distance_maintain_start is not None and not self.mppi_mode:
+                self.get_logger().info('Lost distance maintenance, resetting timer')
+            self.distance_maintain_start = None
         
-        if self.last_time is not None:
-            dt = (current_time - self.last_time).nanoseconds / 1e9
-            if dt > 0:
-                error_rate = (distance_error - self.last_distance_error) / dt
+        # Exit MPPI mode if distance exceeds max_takeover_distance
+        if self.mppi_mode and detected_distance > self.max_takeover_distance:
+            self.mppi_mode = False
+            self.distance_maintain_start = None
+            self.get_logger().info('=' * 60)
+            self.get_logger().info(f'EXITING MPPI MODE - Distance > {self.max_takeover_distance}m')
+            self.get_logger().info('=' * 60)
+        
+        # Use MPPI control if in MPPI mode
+        if self.mppi_mode:
+            self.get_logger().info('MPPI TAKEOVER MODE ACTIVE - Using MPPI Controller')
+            
+            # Convert opponent position to ego frame coordinates
+            opponent_x = detected_distance * np.cos(target_angle)
+            opponent_y = detected_distance * np.sin(target_angle)
+            
+            # Current state: [x, y, theta, v] (ego frame: x=0, y=0, theta=0)
+            current_state = [0.0, 0.0, 0.0, self.current_velocity]
+            
+            # Compute optimal control using MPPI
+            throttle, steering = self.mppi_control(current_state, opponent_x, opponent_y)
+            
+            # Clip to safety limits
+            throttle = np.clip(throttle, self.min_throttle, self.max_throttle)
+            steering = np.clip(steering, -1.0, 1.0)
+        else:
+            # Use PD control for following
+            if self.distance_maintain_start is not None:
+                maintain_duration = (current_time - self.distance_maintain_start).nanoseconds / 1e9
+                self.get_logger().info(
+                    f'OPPONENT CAR DETECTED - Maintaining distance '
+                    f'({maintain_duration:.1f}/{self.distance_maintain_time:.1f}s)'
+                )
+            else:
+                self.get_logger().info('OPPONENT CAR DETECTED - Tracking target')
+            
+            # Compute steering command
+            steering = self.kp_steering * target_angle
+            steering = np.clip(steering, -1.0, 1.0)
+            
+            # Compute throttle command (PD control)
+            distance_error_signed = detected_distance - self.target_distance
+            
+            if self.last_time is not None:
+                dt = (current_time - self.last_time).nanoseconds / 1e9
+                if dt > 0:
+                    error_rate = (distance_error_signed - self.last_distance_error) / dt
+                else:
+                    error_rate = 0.0
             else:
                 error_rate = 0.0
-        else:
-            error_rate = 0.0
+            
+            # PD control for throttle based on distance to opponent
+            throttle = self.kp_speed * distance_error_signed + self.kd_speed * error_rate
+            throttle = np.clip(throttle, self.min_throttle, self.max_throttle)
+            
+            # Update state
+            self.last_distance_error = distance_error_signed
         
-        # PD control for throttle based on distance to opponent
-        throttle = self.kp_speed * distance_error + self.kd_speed * error_rate
-        throttle = np.clip(throttle, self.min_throttle, self.max_throttle)
-        
-        # Update state
-        self.last_distance_error = distance_error
         self.last_time = current_time
         
         # Publish control command

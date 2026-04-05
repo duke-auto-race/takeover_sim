@@ -16,6 +16,7 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 # find_package(scout_msgs REQUIRED)
 find_package(osqp REQUIRED)
 find_package(OsqpEigen REQUIRED)
@@ -42,6 +43,7 @@ ament_target_dependencies(race_sim_server_node
 	sensor_msgs
 	mavros_msgs
 	visualization_msgs
+	tf2_ros
 )
 install(TARGETS race_sim_server_node DESTINATION lib/${PROJECT_NAME})
 
@@ -57,6 +59,7 @@ ament_target_dependencies(race_viz_node
 	sensor_msgs
 	mavros_msgs
 	visualization_msgs
+	tf2_ros
 )
 install(TARGETS race_viz_node DESTINATION lib/${PROJECT_NAME})
 

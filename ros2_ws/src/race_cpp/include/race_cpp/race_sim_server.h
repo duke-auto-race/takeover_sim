@@ -9,9 +9,12 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 #include <eigen3/Eigen/Dense>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <tf2_ros/transform_broadcaster.h>
 #define RAW_TRACK 0
 #define TRAJ_TRACK 1
 
@@ -72,8 +75,16 @@ class sim_server
         Eigen::VectorXd state_k_bike; // x, y, psi, v, beta
         Eigen::Vector2d acc_input_bike; // a, delta
 
-        double lf = 0.16;
-        double lr = 0.16;
+        double lf = 1.6;  // front axle to CG (meters) - matches viz
+        double lr = 1.6;  // rear axle to CG (meters) - matches viz
+        double friction_coeff = 0.3; // friction coefficient for natural deceleration
+
+        // AI opponent vehicle
+        double ai_path_position = 0.0;  // position along track [0, track_length]
+        double ai_velocity = 10.0;  // constant velocity in m/s
+        double track_total_length = 0.0;  // total track length
+        void update_ai_vehicle(double dt);
+        void get_track_pose(double s, double& x, double& y, double& psi);
 
         void input_callback(
             const std_msgs::msg::Float64MultiArray msg
@@ -83,6 +94,8 @@ class sim_server
 
         rclcpp::TimerBase::SharedPtr sim_timer;    
         void sim_timer_callback();
+        
+        int track_publish_counter = 0;  // Counter for periodic track republishing
 
         Eigen::Quaterniond rpy2q(const Eigen::Vector3d& rpy);
         static geometry_msgs::msg::Quaternion quat_from_rpy(double roll, double pitch, double yaw)
@@ -119,12 +132,23 @@ class sim_server
         rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr sim_pos_pub;
         rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr sim_vel_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_pub;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr track_pub;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ai_viz_pub;
 
-        rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr rc_sub;
+        // tf broadcaster
+        std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
+
+        rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr rc_sub;
 
         void viz();
+        void viz_track();
+        void viz_ai_vehicle();
+        
+        geometry_msgs::msg::Quaternion mult_quat(
+            const geometry_msgs::msg::Quaternion &a, 
+            const geometry_msgs::msg::Quaternion &b);
 
-        void rcCallback(const std_msgs::msg::Float32MultiArray::ConstPtr msg);
+        void rcCallback(const sensor_msgs::msg::Joy::ConstPtr msg);
         
     public:
         sim_server(std::shared_ptr<rclcpp::Node> node);

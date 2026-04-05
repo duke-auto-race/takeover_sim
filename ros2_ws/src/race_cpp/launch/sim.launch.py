@@ -29,9 +29,11 @@ def generate_launch_description():
             output='screen'
         ),
         Node(
-            package='race_cpp',
-            executable='joy.py',
-            name='rc',
+            package='joy',
+            executable='joy_node',
+            name='joy',
             output='screen'
         ),
     ])
+    
+    # patrick@lala:~/takeover_sim$ ros2 run joy joy_node

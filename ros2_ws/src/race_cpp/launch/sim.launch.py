@@ -4,11 +4,7 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
-    """
-    two nodes here:
-    - leader (w/ sine wave)
-    - follower (w/ velocity cmd)
-    """
+
     rviz_config_path = os.path.join(
         get_package_share_directory('race_cpp'),
         'launch',      
@@ -26,6 +22,9 @@ def generate_launch_description():
             package='race_cpp',
             executable='race_sim_server_node',
             name='race_sim_server_node',
+            parameters=[
+                {"ai_vel": 10.0},
+            ],
             output='screen'
         ),
         Node(

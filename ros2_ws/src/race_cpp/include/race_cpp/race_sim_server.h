@@ -3,6 +3,8 @@
 
 #include <chrono>
 #include <memory>
+#include <limits>
+#include <cmath>
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -12,6 +14,7 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/joy.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 #include <eigen3/Eigen/Dense>
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <tf2_ros/transform_broadcaster.h>
@@ -79,6 +82,15 @@ class sim_server
         double lr = 1.6;  // rear axle to CG (meters) - matches viz
         double friction_coeff = 0.3; // friction coefficient for natural deceleration
 
+        // UST-10LX LiDAR parameters
+        double lidar_scan_angle = 270.0 * M_PI / 180.0;  // 270 degrees in radians
+        double lidar_angular_resolution = 0.25 * M_PI / 180.0;  // 0.25 degrees in radians
+        double lidar_max_range = 30.0;  // 30 meters
+        double lidar_accuracy = 0.04;   // 40 mm
+        double lidar_frequency = 40.0;  // 40 Hz
+        int lidar_num_rays = int(lidar_scan_angle / lidar_angular_resolution); // ~1080 rays
+        int lidar_scan_counter = 0;     // Counter for 40Hz publishing (every 2-3 iterations at 100Hz)
+
         // AI opponent vehicle
         double ai_path_position = 0.0;  // position along track [0, track_length]
         double ai_velocity = 10.0;  // constant velocity in m/s
@@ -129,11 +141,15 @@ class sim_server
         Eigen::Vector2d pd_ctrl();
 
         // pub
+        // rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr sim_pos_pub;
+        // rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr sim_vel_pub;
         rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr sim_pos_pub;
         rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr sim_vel_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr track_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ai_viz_pub;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr lidar_viz_pub;
+        rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr lidar_scan_pub;
 
         // tf broadcaster
         std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
@@ -143,6 +159,21 @@ class sim_server
         void viz();
         void viz_track();
         void viz_ai_vehicle();
+        void viz_lidar();
+        void publish_lidar_scan(const rclcpp::Time& timestamp);
+        
+        // LiDAR ray intersection helpers
+        double ray_line_intersection(double ray_x, double ray_y, double ray_dx, double ray_dy,
+                                     double line_x1, double line_y1, double line_x2, double line_y2);
+        double ray_circle_intersection(double ray_x, double ray_y, double ray_dx, double ray_dy,
+                                       double circle_x, double circle_y, double circle_r);
+        double ray_arc_intersection(double ray_x, double ray_y, double ray_dx, double ray_dy,
+                                    double circle_x, double circle_y, double circle_r,
+                                    double start_angle, double end_angle);
+        double ray_box_intersection(double ray_x, double ray_y, double ray_dx, double ray_dy,
+                                    double box_x, double box_y, double box_psi, 
+                                    double box_width, double box_length);
+        double compute_lidar_range(double ray_angle);
         
         geometry_msgs::msg::Quaternion mult_quat(
             const geometry_msgs::msg::Quaternion &a, 

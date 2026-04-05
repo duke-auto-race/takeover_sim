@@ -40,6 +40,16 @@ sim_server::sim_server(
         10
     );
 
+    lidar_viz_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>(
+        "/sim_server/lidar_marker",
+        10
+    );
+
+    lidar_scan_pub = _node->create_publisher<sensor_msgs::msg::LaserScan>(
+        "/scan",
+        10
+    );
+
     tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(_node);
 
     rc_sub = _node->create_subscription<sensor_msgs::msg::Joy>(
@@ -57,6 +67,18 @@ sim_server::sim_server(
     track_total_length = 2.0 * track_length + 2.0 * M_PI * turn_radius;
     ai_path_position = 0.0;  // Start at beginning
 
+    // Initialize player vehicle at track starting position
+    // state_k_bike: [x, y, psi, v, beta]
+    state_k_bike[0] = -track_length/2.0;  // x: start of bottom straight
+    state_k_bike[1] = -turn_radius;        // y: bottom straight position
+    state_k_bike[2] = 0.0;                 // psi: heading in +x direction
+    state_k_bike[3] = 0.0;                 // v: velocity
+    state_k_bike[4] = 0.0;                 // beta: slip angle
+
+    _node->declare_parameter("ai_vel", 0.0);
+    ai_velocity = _node->get_parameter("ai_vel").as_double();
+    std::cout<<ai_velocity<<std::endl;
+
     // Publish track once at startup
     viz_track();
 }
@@ -70,6 +92,9 @@ void sim_server::input_callback(const std_msgs::msg::Float64MultiArray msg)
 
 void sim_server::sim_timer_callback()
 {
+    // Get current timestamp once for consistent timing across all messages and TFs
+    auto current_time = _node->get_clock()->now();
+    
     state_k_bike = bicycle_kinematic_fx(
         0.01,
         state_k_bike,
@@ -78,7 +103,7 @@ void sim_server::sim_timer_callback()
 
     geometry_msgs::msg::PoseStamped temp;
     temp.header.frame_id = "map";
-    temp.header.stamp = _node->get_clock()->now();
+    temp.header.stamp = current_time;
     temp.pose.position.x = state_k_bike(0);
     temp.pose.position.y = state_k_bike(1);
     temp.pose.position.z = 0;
@@ -87,7 +112,7 @@ void sim_server::sim_timer_callback()
         Eigen::Vector3d(0, 0, state_k_bike(2))
     );
 
-    std::cout<<state_k_bike<<std::endl<<std::endl;;
+    // std::cout<<state_k_bike<<std::endl<<std::endl;;
 
     temp.pose.orientation.w = qtemp.w();
     temp.pose.orientation.x = qtemp.x();
@@ -99,7 +124,7 @@ void sim_server::sim_timer_callback()
 
     // Broadcast TF transform
     geometry_msgs::msg::TransformStamped transform;
-    transform.header.stamp = _node->get_clock()->now();
+    transform.header.stamp = current_time;
     transform.header.frame_id = "map";
     transform.child_frame_id = "base_link";
     transform.transform.translation.x = state_k_bike(0);
@@ -113,7 +138,7 @@ void sim_server::sim_timer_callback()
 
     // Broadcast camera frame for third-person view
     geometry_msgs::msg::TransformStamped camera_transform;
-    camera_transform.header.stamp = _node->get_clock()->now();
+    camera_transform.header.stamp = current_time;
     camera_transform.header.frame_id = "base_link";
     camera_transform.child_frame_id = "camera_link";
     // Position camera behind and above the vehicle
@@ -139,6 +164,22 @@ void sim_server::sim_timer_callback()
     update_ai_vehicle(0.01);
     viz_ai_vehicle();
 
+    // Publish LiDAR scan at 40Hz (timer is 100Hz, so publish every 2-3 iterations)
+    lidar_scan_counter++;
+    if (lidar_scan_counter >= 3) {  // Approximately 40Hz (100/2.5 = 40)
+        publish_lidar_scan(current_time);
+        lidar_scan_counter = 0;
+    } else if (lidar_scan_counter == 2) {
+        // Publish every other time at counter=2 to achieve closer to 40Hz
+        static int skip_toggle = 0;
+        if (skip_toggle % 2 == 0) {
+            publish_lidar_scan(current_time);
+            lidar_scan_counter = 0;
+        }
+        skip_toggle++;
+    }
+
+    viz_lidar();
     viz();    
 }
 
@@ -218,7 +259,6 @@ Eigen::VectorXd sim_server::bicycle_dynamic_fx(
         double beta = s[4];
         double a = acc_input[0];
         double delta = acc_input[1];
-
 
         Eigen::VectorXd dx;
         dx.resize(5);
@@ -520,32 +560,107 @@ void sim_server::viz_track()
         track_markers.markers.push_back(start_line);
     }
     
-    // Lane markings (center dashed line)
-    int num_dashes = 40;
-    double dash_length = (track_length + M_PI * turn_radius) / num_dashes;
+    // Lane markings (center dashed line for entire track)
+    double dash_length = 3.0;  // 3m dashes
+    double dash_gap = 2.0;     // 2m gaps
+    double dash_width = 0.3;   // width of dashes
     
     // Dashes on bottom straight
-    for (int i = 0; i < int(track_length / dash_length / 2); ++i) {
-        if (i % 2 == 0) continue;  // skip every other for dashed effect
+    int num_bottom_dashes = int(track_length / (dash_length + dash_gap));
+    for (int i = 0; i < num_bottom_dashes; ++i) {
         visualization_msgs::msg::Marker dash;
         dash.header = hdr;
         dash.ns = "track";
         dash.id = marker_id++;
         dash.type = visualization_msgs::msg::Marker::CUBE;
         dash.action = visualization_msgs::msg::Marker::ADD;
-        dash.pose.position.x = -track_length/2.0 + i * dash_length;
+        dash.pose.position.x = -track_length/2.0 + i * (dash_length + dash_gap) + dash_length/2.0;
         dash.pose.position.y = -turn_radius;
         dash.pose.position.z = 0.01;
         dash.pose.orientation.w = 1.0;
-        dash.scale.x = dash_length * 0.8;
-        dash.scale.y = 0.3;
+        dash.scale.x = dash_length;
+        dash.scale.y = dash_width;
+        dash.scale.z = road_thickness;
+        dash.color = white_color;
+        track_markers.markers.push_back(dash);
+    }
+    
+    // Dashes on top straight
+    int num_top_dashes = int(track_length / (dash_length + dash_gap));
+    for (int i = 0; i < num_top_dashes; ++i) {
+        visualization_msgs::msg::Marker dash;
+        dash.header = hdr;
+        dash.ns = "track";
+        dash.id = marker_id++;
+        dash.type = visualization_msgs::msg::Marker::CUBE;
+        dash.action = visualization_msgs::msg::Marker::ADD;
+        dash.pose.position.x = track_length/2.0 - i * (dash_length + dash_gap) - dash_length/2.0;
+        dash.pose.position.y = turn_radius;
+        dash.pose.position.z = 0.01;
+        dash.pose.orientation.w = 1.0;
+        dash.scale.x = dash_length;
+        dash.scale.y = dash_width;
+        dash.scale.z = road_thickness;
+        dash.color = white_color;
+        track_markers.markers.push_back(dash);
+    }
+    
+    // Dashes on right curved section
+    double right_curve_length = M_PI * turn_radius;
+    int num_right_curve_dashes = int(right_curve_length / (dash_length + dash_gap));
+    for (int i = 0; i < num_right_curve_dashes; ++i) {
+        double arc_distance = i * (dash_length + dash_gap) + dash_length/2.0;
+        double angle = -M_PI/2.0 + (arc_distance / turn_radius);
+        double x = track_length/2.0 + turn_radius * cos(angle);
+        double y = turn_radius * sin(angle);
+        double yaw = angle + M_PI/2.0;
+        
+        visualization_msgs::msg::Marker dash;
+        dash.header = hdr;
+        dash.ns = "track";
+        dash.id = marker_id++;
+        dash.type = visualization_msgs::msg::Marker::CUBE;
+        dash.action = visualization_msgs::msg::Marker::ADD;
+        dash.pose.position.x = x;
+        dash.pose.position.y = y;
+        dash.pose.position.z = 0.01;
+        dash.pose.orientation = quat_from_rpy(0.0, 0.0, yaw);
+        dash.scale.x = dash_length;
+        dash.scale.y = dash_width;
+        dash.scale.z = road_thickness;
+        dash.color = white_color;
+        track_markers.markers.push_back(dash);
+    }
+    
+    // Dashes on left curved section
+    double left_curve_length = M_PI * turn_radius;
+    int num_left_curve_dashes = int(left_curve_length / (dash_length + dash_gap));
+    for (int i = 0; i < num_left_curve_dashes; ++i) {
+        double arc_distance = i * (dash_length + dash_gap) + dash_length/2.0;
+        double angle = M_PI/2.0 + (arc_distance / turn_radius);
+        double x = -track_length/2.0 + turn_radius * cos(angle);
+        double y = turn_radius * sin(angle);
+        double yaw = angle + M_PI/2.0;
+        
+        visualization_msgs::msg::Marker dash;
+        dash.header = hdr;
+        dash.ns = "track";
+        dash.id = marker_id++;
+        dash.type = visualization_msgs::msg::Marker::CUBE;
+        dash.action = visualization_msgs::msg::Marker::ADD;
+        dash.pose.position.x = x;
+        dash.pose.position.y = y;
+        dash.pose.position.z = 0.01;
+        dash.pose.orientation = quat_from_rpy(0.0, 0.0, yaw);
+        dash.scale.x = dash_length;
+        dash.scale.y = dash_width;
         dash.scale.z = road_thickness;
         dash.color = white_color;
         track_markers.markers.push_back(dash);
     }
     
     track_pub->publish(track_markers);
-    RCLCPP_INFO(_node->get_logger(), "Track visualization published with %zu markers", track_markers.markers.size());
+    // RCLCPP_INFO(_node->get_logger(), "Track visualization published with %zu markers", track_markers.markers.size());
 }
 
 void sim_server::update_ai_vehicle(double dt)
@@ -685,6 +800,445 @@ void sim_server::viz_ai_vehicle()
     }
     
     ai_viz_pub->publish(ma);
+}
+
+void sim_server::viz_lidar()
+{
+    if (state_k_bike.size() != 5) {
+        return;
+    }
+
+    visualization_msgs::msg::MarkerArray ma;
+    
+    std_msgs::msg::Header hdr;
+    hdr.frame_id = "base_link";  // LiDAR in vehicle frame
+    hdr.stamp = _node->get_clock()->now();
+    
+    // LiDAR sensor body (mounted on top of vehicle)
+    const double lidar_height = 0.1;  // 10cm tall
+    const double lidar_radius = 0.05; // 5cm radius
+    const double mount_height = 1.6;  // mounted at 1.6m above ground (on top of vehicle body)
+    
+    // Sensor body color (dark gray/black)
+    std_msgs::msg::ColorRGBA sensor_color;
+    sensor_color.r = 0.1; sensor_color.g = 0.1; sensor_color.b = 0.1; sensor_color.a = 1.0;
+    
+    // Laser ray color (red/orange)
+    std_msgs::msg::ColorRGBA ray_color;
+    ray_color.r = 1.0; ray_color.g = 0.3; ray_color.b = 0.0; ray_color.a = 0.3;
+    
+    // LiDAR body
+    visualization_msgs::msg::Marker lidar_body;
+    lidar_body.header = hdr;
+    lidar_body.ns = "lidar";
+    lidar_body.id = 0;
+    lidar_body.type = visualization_msgs::msg::Marker::CYLINDER;
+    lidar_body.action = visualization_msgs::msg::Marker::ADD;
+    lidar_body.pose.position.x = 0.0;  // center of vehicle
+    lidar_body.pose.position.y = 0.0;
+    lidar_body.pose.position.z = mount_height;
+    lidar_body.pose.orientation.w = 1.0;
+    lidar_body.scale.x = lidar_radius * 2.0;  // diameter
+    lidar_body.scale.y = lidar_radius * 2.0;  // diameter
+    lidar_body.scale.z = lidar_height;
+    lidar_body.color = sensor_color;
+    ma.markers.push_back(lidar_body);
+    
+    // Scan pattern visualization
+    // UST-10LX: 270 degrees scan, centered forward
+    // This means -135° to +135° from forward direction
+    const double start_angle = -lidar_scan_angle / 2.0;  // -135 degrees
+    const double end_angle = lidar_scan_angle / 2.0;     // +135 degrees
+    
+    // Sample rays for visualization (show every 20th ray to avoid clutter)
+    const int ray_skip = 20;
+    const double viz_range = lidar_max_range * 0.5;  // Show rays at half max range for visualization
+    
+    visualization_msgs::msg::Marker scan_rays;
+    scan_rays.header = hdr;
+    scan_rays.ns = "lidar";
+    scan_rays.id = 1;
+    scan_rays.type = visualization_msgs::msg::Marker::LINE_LIST;
+    scan_rays.action = visualization_msgs::msg::Marker::ADD;
+    scan_rays.scale.x = 0.04;  // line width
+    scan_rays.color = ray_color;
+    scan_rays.pose.orientation.w = 1.0;
+    
+    for (int i = 0; i < lidar_num_rays; i += ray_skip) {
+        double angle = start_angle + i * lidar_angular_resolution;
+        
+        geometry_msgs::msg::Point p_start, p_end;
+        // Start point at LiDAR sensor
+        p_start.x = 0.0;
+        p_start.y = 0.0;
+        p_start.z = mount_height;
+        
+        // End point at visualization range
+        p_end.x = viz_range * cos(angle);
+        p_end.y = viz_range * sin(angle);
+        p_end.z = mount_height;
+        
+        scan_rays.points.push_back(p_start);
+        scan_rays.points.push_back(p_end);
+    }
+    ma.markers.push_back(scan_rays);
+    
+    // Scan coverage arc (showing the outer boundary)
+    visualization_msgs::msg::Marker coverage_arc;
+    coverage_arc.header = hdr;
+    coverage_arc.ns = "lidar";
+    coverage_arc.id = 2;
+    coverage_arc.type = visualization_msgs::msg::Marker::LINE_STRIP;
+    coverage_arc.action = visualization_msgs::msg::Marker::ADD;
+    coverage_arc.scale.x = 0.02;  // line width
+    coverage_arc.color = ray_color;
+    coverage_arc.color.a = 0.6;  // more opaque for arc
+    coverage_arc.pose.orientation.w = 1.0;
+    
+    // Draw arc at max range
+    const int arc_segments = 54;  // ~5 degrees per segment
+    for (int i = 0; i <= arc_segments; ++i) {
+        double angle = start_angle + (lidar_scan_angle * i / arc_segments);
+        geometry_msgs::msg::Point p;
+        p.x = viz_range * cos(angle);
+        p.y = viz_range * sin(angle);
+        p.z = mount_height;
+        coverage_arc.points.push_back(p);
+    }
+    ma.markers.push_back(coverage_arc);
+    
+    lidar_viz_pub->publish(ma);
+}
+
+// Ray-line segment intersection
+// Returns distance to intersection, or infinity if no intersection
+double sim_server::ray_line_intersection(double ray_x, double ray_y, double ray_dx, double ray_dy,
+                                         double line_x1, double line_y1, double line_x2, double line_y2)
+{
+    // Line segment from (line_x1, line_y1) to (line_x2, line_y2)
+    double line_dx = line_x2 - line_x1;
+    double line_dy = line_y2 - line_y1;
+    
+    // Solve: ray_origin + t * ray_dir = line_start + s * line_dir
+    // ray_x + t * ray_dx = line_x1 + s * line_dx
+    // ray_y + t * ray_dy = line_y1 + s * line_dy
+    
+    double denom = ray_dx * line_dy - ray_dy * line_dx;
+    if (std::abs(denom) < 1e-10) {
+        return std::numeric_limits<double>::infinity(); // Parallel
+    }
+    
+    double t = ((line_x1 - ray_x) * line_dy - (line_y1 - ray_y) * line_dx) / denom;
+    double s = ((line_x1 - ray_x) * ray_dy - (line_y1 - ray_y) * ray_dx) / denom;
+    
+    // Check if intersection is valid (t > 0 for ray, 0 <= s <= 1 for line segment)
+    if (t > 0.001 && s >= 0.0 && s <= 1.0) {
+        return t;
+    }
+    
+    return std::numeric_limits<double>::infinity();
+}
+
+// Ray-circle intersection
+// Returns distance to nearest intersection, or infinity if no intersection
+double sim_server::ray_circle_intersection(double ray_x, double ray_y, double ray_dx, double ray_dy,
+                                           double circle_x, double circle_y, double circle_r)
+{
+    // Translate to circle-centered coordinates
+    double ox = ray_x - circle_x;
+    double oy = ray_y - circle_y;
+    
+    // Quadratic equation: (ox + t*dx)^2 + (oy + t*dy)^2 = r^2
+    double a = ray_dx * ray_dx + ray_dy * ray_dy;
+    double b = 2.0 * (ox * ray_dx + oy * ray_dy);
+    double c = ox * ox + oy * oy - circle_r * circle_r;
+    
+    double discriminant = b * b - 4.0 * a * c;
+    if (discriminant < 0.0) {
+        return std::numeric_limits<double>::infinity(); // No intersection
+    }
+    
+    double sqrt_disc = std::sqrt(discriminant);
+    double t1 = (-b - sqrt_disc) / (2.0 * a);
+    double t2 = (-b + sqrt_disc) / (2.0 * a);
+    
+    // Return nearest positive intersection
+    if (t1 > 0.001) return t1;
+    if (t2 > 0.001) return t2;
+    
+    return std::numeric_limits<double>::infinity();
+}
+
+// Ray-arc intersection (circular arc between start_angle and end_angle)
+// Returns distance to nearest intersection on the arc, or infinity if no intersection
+double sim_server::ray_arc_intersection(double ray_x, double ray_y, double ray_dx, double ray_dy,
+                                        double circle_x, double circle_y, double circle_r,
+                                        double start_angle, double end_angle)
+{
+    // First get intersection with full circle
+    double ox = ray_x - circle_x;
+    double oy = ray_y - circle_y;
+    
+    double a = ray_dx * ray_dx + ray_dy * ray_dy;
+    double b = 2.0 * (ox * ray_dx + oy * ray_dy);
+    double c = ox * ox + oy * oy - circle_r * circle_r;
+    
+    double discriminant = b * b - 4.0 * a * c;
+    if (discriminant < 0.0) {
+        return std::numeric_limits<double>::infinity();
+    }
+    
+    double sqrt_disc = std::sqrt(discriminant);
+    double t1 = (-b - sqrt_disc) / (2.0 * a);
+    double t2 = (-b + sqrt_disc) / (2.0 * a);
+    
+    // Check each intersection point to see if it's on the arc
+    auto check_on_arc = [&](double t) -> bool {
+        if (t <= 0.001) return false;
+        
+        // Get intersection point
+        double px = ray_x + t * ray_dx;
+        double py = ray_y + t * ray_dy;
+        
+        // Calculate angle of intersection point relative to circle center
+        double angle = std::atan2(py - circle_y, px - circle_x);
+        
+        // Normalize angles to [0, 2π)
+        auto normalize_angle = [](double a) {
+            while (a < 0.0) a += 2.0 * M_PI;
+            while (a >= 2.0 * M_PI) a -= 2.0 * M_PI;
+            return a;
+        };
+        
+        angle = normalize_angle(angle);
+        double s_angle = normalize_angle(start_angle);
+        double e_angle = normalize_angle(end_angle);
+        
+        // Check if angle is within arc range
+        if (s_angle <= e_angle) {
+            return angle >= s_angle && angle <= e_angle;
+        } else {
+            // Arc wraps around 0
+            return angle >= s_angle || angle <= e_angle;
+        }
+    };
+    
+    // Return nearest valid intersection
+    if (check_on_arc(t1)) {
+        if (check_on_arc(t2) && t2 < t1) return t2;
+        return t1;
+    }
+    if (check_on_arc(t2)) return t2;
+    
+    return std::numeric_limits<double>::infinity();
+}
+
+// Ray-box (rectangle) intersection
+// Box is centered at (box_x, box_y) with heading box_psi
+double sim_server::ray_box_intersection(double ray_x, double ray_y, double ray_dx, double ray_dy,
+                                        double box_x, double box_y, double box_psi,
+                                        double box_width, double box_length)
+{
+    // Transform ray to box-local coordinates
+    double cos_psi = std::cos(-box_psi);
+    double sin_psi = std::sin(-box_psi);
+    
+    double local_ray_x = cos_psi * (ray_x - box_x) - sin_psi * (ray_y - box_y);
+    double local_ray_y = sin_psi * (ray_x - box_x) + cos_psi * (ray_y - box_y);
+    double local_ray_dx = cos_psi * ray_dx - sin_psi * ray_dy;
+    double local_ray_dy = sin_psi * ray_dx + cos_psi * ray_dy;
+    
+    // Box edges in local coordinates (axis-aligned)
+    double half_length = box_length / 2.0;
+    double half_width = box_width / 2.0;
+    
+    double min_dist = std::numeric_limits<double>::infinity();
+    
+    // Check 4 edges
+    // Front edge: y = half_width, x in [-half_length, half_length]
+    double d1 = ray_line_intersection(local_ray_x, local_ray_y, local_ray_dx, local_ray_dy,
+                                      -half_length, half_width, half_length, half_width);
+    min_dist = std::min(min_dist, d1);
+    
+    // Back edge: y = -half_width
+    double d2 = ray_line_intersection(local_ray_x, local_ray_y, local_ray_dx, local_ray_dy,
+                                      -half_length, -half_width, half_length, -half_width);
+    min_dist = std::min(min_dist, d2);
+    
+    // Right edge: x = half_length
+    double d3 = ray_line_intersection(local_ray_x, local_ray_y, local_ray_dx, local_ray_dy,
+                                      half_length, -half_width, half_length, half_width);
+    min_dist = std::min(min_dist, d3);
+    
+    // Left edge: x = -half_length
+    double d4 = ray_line_intersection(local_ray_x, local_ray_y, local_ray_dx, local_ray_dy,
+                                      -half_length, -half_width, -half_length, half_width);
+    min_dist = std::min(min_dist, d4);
+    
+    return min_dist;
+}
+
+// Compute LiDAR range for a specific ray angle (in base_link frame)
+double sim_server::compute_lidar_range(double ray_angle)
+{
+    // Get vehicle pose
+    double vehicle_x = state_k_bike[0];
+    double vehicle_y = state_k_bike[1];
+    double vehicle_psi = state_k_bike[2];
+    
+    // Ray origin in map frame (LiDAR position)
+    double ray_x = vehicle_x;
+    double ray_y = vehicle_y;
+    
+    // Ray direction in map frame
+    double world_angle = vehicle_psi + ray_angle;
+    double ray_dx = std::cos(world_angle);
+    double ray_dy = std::sin(world_angle);
+    
+    double min_range = lidar_max_range;
+    
+    // Track parameters
+    const double track_length = 100.0;
+    const double track_width = 12.0;
+    const double turn_radius = 40.0;
+    const double half_width = track_width / 2.0;
+    
+    // Check track boundaries
+    // Bottom straight outer edge (y = -turn_radius - half_width)
+    double d = ray_line_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                                     -track_length/2.0, -turn_radius - half_width,
+                                     track_length/2.0, -turn_radius - half_width);
+    min_range = std::min(min_range, d);
+    
+    // Bottom straight inner edge (y = -turn_radius + half_width)
+    d = ray_line_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                              -track_length/2.0, -turn_radius + half_width,
+                              track_length/2.0, -turn_radius + half_width);
+    min_range = std::min(min_range, d);
+    
+    // Top straight outer edge (y = turn_radius + half_width)
+    d = ray_line_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                              -track_length/2.0, turn_radius + half_width,
+                              track_length/2.0, turn_radius + half_width);
+    min_range = std::min(min_range, d);
+    
+    // Top straight inner edge (y = turn_radius - half_width)
+    d = ray_line_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                              -track_length/2.0, turn_radius - half_width,
+                              track_length/2.0, turn_radius - half_width);
+    min_range = std::min(min_range, d);
+    
+    // Curved sections - outer and inner arcs (only the track portions, not full circles)
+    // Right curve: from -90° to +90° (bottom to top)
+    d = ray_arc_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                             track_length/2.0, 0.0, turn_radius + half_width,
+                             -M_PI/2.0, M_PI/2.0);
+    min_range = std::min(min_range, d);
+    
+    d = ray_arc_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                             track_length/2.0, 0.0, turn_radius - half_width,
+                             -M_PI/2.0, M_PI/2.0);
+    min_range = std::min(min_range, d);
+    
+    // Left curve: from +90° to +270° (top to bottom)
+    d = ray_arc_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                             -track_length/2.0, 0.0, turn_radius + half_width,
+                             M_PI/2.0, 3.0*M_PI/2.0);
+    min_range = std::min(min_range, d);
+    
+    d = ray_arc_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                             -track_length/2.0, 0.0, turn_radius - half_width,
+                             M_PI/2.0, 3.0*M_PI/2.0);
+    min_range = std::min(min_range, d);
+    
+    // Check AI vehicle
+    double ai_x, ai_y, ai_psi;
+    get_track_pose(ai_path_position, ai_x, ai_y, ai_psi);
+    
+    // AI vehicle body
+    const double ai_length = 3.28; // lf + lr + 0.08
+    const double ai_width = 1.66;  // track + 0.06
+    d = ray_box_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                            ai_x, ai_y, ai_psi, ai_width, ai_length);
+    min_range = std::min(min_range, d);
+    
+    // AI vehicle wheels (4 cylinders approximated as circles)
+    const double wheel_radius = 0.6;
+    const double wheel_lf = 1.6;
+    const double wheel_lr = 1.6;
+    const double wheel_track = 1.6;
+    
+    // Wheel positions relative to AI vehicle
+    std::vector<std::pair<double, double>> wheel_offsets = {
+        {wheel_lf, wheel_track/2.0},   // FL
+        {wheel_lf, -wheel_track/2.0},  // FR
+        {-wheel_lr, wheel_track/2.0},  // RL
+        {-wheel_lr, -wheel_track/2.0}  // RR
+    };
+    
+    for (const auto& offset : wheel_offsets) {
+        double wheel_local_x = offset.first;
+        double wheel_local_y = offset.second;
+        
+        // Transform to world frame
+        double wheel_world_x = ai_x + wheel_local_x * std::cos(ai_psi) - wheel_local_y * std::sin(ai_psi);
+        double wheel_world_y = ai_y + wheel_local_x * std::sin(ai_psi) + wheel_local_y * std::cos(ai_psi);
+        
+        d = ray_circle_intersection(ray_x, ray_y, ray_dx, ray_dy,
+                                   wheel_world_x, wheel_world_y, wheel_radius);
+        min_range = std::min(min_range, d);
+    }
+    
+    return min_range;
+}
+
+void sim_server::publish_lidar_scan(const rclcpp::Time& timestamp)
+{
+    sensor_msgs::msg::LaserScan scan;
+    
+    // Header
+    scan.header.stamp = timestamp;
+    scan.header.frame_id = "base_link";  // LiDAR frame
+    
+    // LaserScan parameters for UST-10LX
+    // 270 degree scan from -135° to +135° (centered forward)
+    scan.angle_min = -lidar_scan_angle / 2.0;  // -135 degrees in radians
+    scan.angle_max = lidar_scan_angle / 2.0;   // +135 degrees in radians
+    scan.angle_increment = lidar_angular_resolution;  // 0.25 degrees in radians
+    scan.time_increment = 1.0 / (lidar_frequency * lidar_num_rays);  // time between measurements
+    scan.scan_time = 1.0 / lidar_frequency;  // 1/40 = 0.025 seconds
+    scan.range_min = 0.1;   // minimum range (typically 10cm for safety)
+    scan.range_max = lidar_max_range;  // 30 meters
+    
+    // Initialize ranges array
+    scan.ranges.resize(lidar_num_rays);
+    scan.intensities.resize(lidar_num_rays);
+    
+    // Compute actual ranges using ray-tracing
+    const double start_angle = -lidar_scan_angle / 2.0;
+    
+    for (int i = 0; i < lidar_num_rays; ++i) {
+        double ray_angle = start_angle + i * lidar_angular_resolution;
+        double range = compute_lidar_range(ray_angle);
+        
+        // Clamp to valid range
+        if (range < scan.range_min) {
+            range = scan.range_min;
+        } else if (range > scan.range_max) {
+            range = scan.range_max;
+        }
+        
+        scan.ranges[i] = range;
+        
+        // Intensity based on range (closer = higher intensity)
+        if (range < scan.range_max) {
+            scan.intensities[i] = 200.0 * (1.0 - range / scan.range_max);
+        } else {
+            scan.intensities[i] = 50.0; // Low intensity for max range
+        }
+    }
+    
+    lidar_scan_pub->publish(scan);
 }
 
 geometry_msgs::msg::Quaternion sim_server::mult_quat(

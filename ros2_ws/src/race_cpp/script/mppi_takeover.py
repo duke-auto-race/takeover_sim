@@ -250,111 +250,102 @@ class LidarFollowerNode(Node):
         return torch.stack([x_next, y_next, theta_next, v_next], dim=1)
     
     def mppi_cost(self, states, controls, opponent_x, opponent_y):
-        """
-        Compute cost for each trajectory sample
-        states: [num_samples, horizon+1, 4] (x, y, theta, v)
-        controls: [num_samples, horizon, 2] (throttle, steering)
-        opponent_x, opponent_y: opponent position in ego frame
-        """
         num_samples = states.shape[0]
         horizon = controls.shape[1]
-        
-        # Initialize total cost
+
         total_cost = torch.zeros(num_samples, device=self.device)
-        
-        # Opponent position in global frame (ego frame)
-        opp_dist = torch.sqrt(opponent_x**2 + opponent_y**2)
-        opp_angle = torch.atan2(opponent_y, opponent_x)
-        
-        # Cost over horizon
+
+        desired_side = -1.0   # right side
+        clearance = 3.6       # lateral clearance (meters)
+
         for t in range(horizon):
             x = states[:, t, 0]
             y = states[:, t, 1]
-            theta = states[:, t, 2]
             v = states[:, t, 3]
-            
-            throttle = controls[:, t, 0]
-            steering = controls[:, t, 1]
-            
-            # 1. Distance to opponent cost (want to close gap for takeover)
-            # Predict opponent position (assuming opponent moves straight)
-            opp_x_pred = opponent_x + opp_dist * torch.cos(opp_angle) * t * self.mppi_dt * 0.5
-            opp_y_pred = opponent_y + opp_dist * torch.sin(opp_angle) * t * self.mppi_dt * 0.5
-            
-            dist_to_opp = torch.sqrt((x - opp_x_pred)**2 + (y - opp_y_pred)**2)
-            distance_cost = self.mppi_cost_distance * (dist_to_opp - self.mppi_takeover_distance)**2
-            
-            # 2. Lateral offset cost (stay behind opponent, minimize lateral deviation)
-            lateral_cost = self.mppi_cost_lateral * y**2
-            
-            # 3. Velocity cost (maintain high speed for takeover)
-            desired_v = self.desired_velocity * 1.2  # Slightly faster for takeover
+
+            dx = x - opponent_x
+            dy = y - opponent_y
+            dist = torch.sqrt(dx**2 + dy**2 + 1e-6)
+
+            # 1. collision
+            collision_cost = 1.0 / (dist + 1.0)
+
+            # 2. velocity
+            desired_v = self.desired_velocity * 1.3
             velocity_cost = self.mppi_cost_velocity * (v - desired_v)**2
-            
-            # 4. Control effort cost (smooth controls)
-            control_cost = self.mppi_cost_control * (throttle**2 + steering**2)
-            
-            # Sum costs
-            total_cost += distance_cost + lateral_cost + velocity_cost + control_cost
-        
+
+            # 3. control smoothing
+            control_cost = 4.0 * (controls[:, t, 0]**2 + controls[:, t, 1]**2)
+
+            # 4. side commitment (stay right)
+            side_error = (torch.sign(dy + 1e-3) - desired_side)**2
+            side_cost = 20.0 * side_error
+
+            # 5. forward progress
+            progress = -8.0 * (x - opponent_x)
+
+            # 6. reverse penalty
+            reverse_cost = 20.0 * torch.clamp(-v, min=0.0)**2
+
+            # 7. lateral clearance (key fix)
+            lateral_gap = torch.abs(dy)
+            gap_violation = torch.clamp(clearance - lateral_gap, min=0.0)
+            clearance_cost = 30.0 * gap_violation**2
+
+            total_cost += (
+                collision_cost +
+                velocity_cost +
+                control_cost +
+                side_cost +
+                progress +
+                reverse_cost +
+                clearance_cost
+            )
+
         return total_cost
     
     def mppi_control(self, current_state, opponent_x, opponent_y):
-        """
-        MPPI controller using PyTorch parallel sampling
-        current_state: [x, y, theta, v] current ego state
-        opponent_x, opponent_y: opponent position in ego frame
-        Returns: optimal (throttle, steering)
-        """
-        # Convert to torch tensors
         state = torch.tensor(current_state, dtype=torch.float32, device=self.device)
         opp_x = torch.tensor(opponent_x, dtype=torch.float32, device=self.device)
         opp_y = torch.tensor(opponent_y, dtype=torch.float32, device=self.device)
-        
-        # Sample control sequences (num_samples x horizon x 2)
+
         throttle_samples = torch.randn(
             self.mppi_num_samples, self.mppi_horizon, device=self.device
         ) * self.mppi_sigma_throttle
-        
+
         steering_samples = torch.randn(
             self.mppi_num_samples, self.mppi_horizon, device=self.device
-        ) * self.mppi_sigma_steering
+        ) * self.mppi_sigma_steering 
         
-        # Clip controls to valid range
+        steering_samples += -0.2
+
         throttle_samples = torch.clamp(throttle_samples, -0.5, 1.0)
         steering_samples = torch.clamp(steering_samples, -1.0, 1.0)
-        
+
         controls = torch.stack([throttle_samples, steering_samples], dim=2)
-        
-        # Rollout trajectories in parallel
+
         states = torch.zeros(
             self.mppi_num_samples, self.mppi_horizon + 1, 4, device=self.device
         )
-        states[:, 0, :] = state  # Initial state for all samples
-        
-        # Forward simulate all trajectories
+        states[:, 0, :] = state
+
         for t in range(self.mppi_horizon):
             states[:, t + 1, :] = self.mppi_dynamics(states[:, t, :], controls[:, t, :])
-        
-        # Compute costs for all trajectories
+
         costs = self.mppi_cost(states, controls, opp_x, opp_y)
-        
-        # Compute weights using softmax (temperature-based)
+
         weights = torch.softmax(-costs / self.mppi_lambda, dim=0)
-        
-        # Visualize trajectories in RViz
+
         self.publish_trajectories_visualization(states, weights)
-        
-        # Compute optimal control as weighted average
+
         optimal_control = torch.sum(
-            weights.unsqueeze(1).unsqueeze(2) * controls, dim=0
+            weights[:, None, None] * controls, dim=0
         )
-        
-        # Return first control action
-        throttle = optimal_control[0, 0].cpu().item()
-        steering = optimal_control[0, 1].cpu().item()
-        
-        return throttle, steering
+
+        return (
+            optimal_control[0, 0].item(),
+            optimal_control[0, 1].item()
+        )
     
     def vel_x_callback(self, msg: Float64):
         """Update current velocity from ego vehicle"""
@@ -436,9 +427,7 @@ class LidarFollowerNode(Node):
         # Compute average distances to left and right boundaries
         left_dist = np.mean(left_ranges) if len(left_ranges) > 0 else float('inf')
         right_dist = np.mean(right_ranges) if len(right_ranges) > 0 else float('inf')
-        
-        # self.get_logger().info(f"{left_dist}")
-        # self.get_logger().info(f"{right_dist}")
+
         
         # Steer to stay centered between boundaries
         # Positive steering if right side is closer (steer left)
@@ -549,7 +538,7 @@ class LidarFollowerNode(Node):
                 
                 # Switch to MPPI mode after maintaining distance for specified time
                 # AND only if within max_takeover_distance
-                if maintain_duration >= self.distance_maintain_time and not self.mppi_mode and detected_distance <= self.max_takeover_distance:
+                if not self.mppi_mode and detected_distance <= self.max_takeover_distance:
                     self.mppi_mode = True
                     self.get_logger().info('=' * 60)
                     self.get_logger().info('SWITCHING TO MPPI TAKEOVER MODE!')

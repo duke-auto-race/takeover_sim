@@ -101,7 +101,7 @@ def generate_launch_description():
     
     mppi_horizon_arg = DeclareLaunchArgument(
         'mppi_horizon',
-        default_value='20',
+        default_value='25',
         description='Planning horizon steps'
     )
     
@@ -113,7 +113,7 @@ def generate_launch_description():
     
     mppi_lambda_arg = DeclareLaunchArgument(
         'mppi_lambda',
-        default_value='1.0',
+        default_value='40.0',
         description='Temperature parameter'
     )
     
@@ -137,7 +137,7 @@ def generate_launch_description():
     
     mppi_cost_lateral_arg = DeclareLaunchArgument(
         'mppi_cost_lateral',
-        default_value='2.0',
+        default_value='8.0',
         description='Cost weight for lateral offset'
     )
     
@@ -149,13 +149,13 @@ def generate_launch_description():
     
     mppi_cost_control_arg = DeclareLaunchArgument(
         'mppi_cost_control',
-        default_value='0.01',
+        default_value='1000.0',
         description='Cost weight for control effort'
     )
     
     mppi_takeover_distance_arg = DeclareLaunchArgument(
         'mppi_takeover_distance',
-        default_value='3.0',
+        default_value='10.0',
         description='Target distance for takeover'
     )
     
@@ -167,13 +167,13 @@ def generate_launch_description():
     
     distance_maintain_time_arg = DeclareLaunchArgument(
         'distance_maintain_time',
-        default_value='0.2',
+        default_value='0.01',
         description='Time to maintain distance before MPPI (seconds)'
     )
     
     max_takeover_distance_arg = DeclareLaunchArgument(
         'max_takeover_distance',
-        default_value='5.0',
+        default_value='16.0',
         description='Maximum distance to allow MPPI takeover (meters)'
     )
 

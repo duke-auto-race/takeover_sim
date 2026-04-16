@@ -101,13 +101,13 @@ def generate_launch_description():
     
     mppi_horizon_arg = DeclareLaunchArgument(
         'mppi_horizon',
-        default_value='25',
+        default_value='250',
         description='Planning horizon steps'
     )
     
     mppi_dt_arg = DeclareLaunchArgument(
         'mppi_dt',
-        default_value='0.1',
+        default_value='0.01',
         description='Time step for prediction (seconds)'
     )
     

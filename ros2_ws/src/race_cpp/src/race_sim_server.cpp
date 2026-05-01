@@ -45,6 +45,11 @@ sim_server::sim_server(
         10
     );
 
+    ai_pos_pub = _node->create_publisher<geometry_msgs::msg::PoseStamped>(
+        "/sim_server/ai_pos",
+        10
+    );
+
     lidar_viz_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>(
         "/sim_server/lidar_marker",
         10
@@ -833,6 +838,15 @@ void sim_server::viz_ai_vehicle()
     }
     
     ai_viz_pub->publish(ma);
+
+    // Publish AI vehicle pose on /sim_server/ai_pos
+    geometry_msgs::msg::PoseStamped ai_pose;
+    ai_pose.header = hdr;
+    ai_pose.pose.position.x = ai_x;
+    ai_pose.pose.position.y = ai_y;
+    ai_pose.pose.position.z = 0.0;
+    ai_pose.pose.orientation = quat_from_rpy(0.0, 0.0, ai_psi);
+    ai_pos_pub->publish(ai_pose);
 }
 
 void sim_server::viz_lidar()

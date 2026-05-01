@@ -101,13 +101,13 @@ def generate_launch_description():
     
     mppi_horizon_arg = DeclareLaunchArgument(
         'mppi_horizon',
-        default_value='250',
+        default_value='200',
         description='Planning horizon steps'
     )
     
     mppi_dt_arg = DeclareLaunchArgument(
         'mppi_dt',
-        default_value='0.01',
+        default_value='0.04',
         description='Time step for prediction (seconds)'
     )
     
@@ -125,7 +125,7 @@ def generate_launch_description():
     
     mppi_sigma_steering_arg = DeclareLaunchArgument(
         'mppi_sigma_steering',
-        default_value='0.5',
+        default_value='0.8',
         description='Steering noise std'
     )
     

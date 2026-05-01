@@ -126,9 +126,9 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 162.1999053955078
+      Max Intensity: 160.08413696289062
       Min Color: 0; 0; 0
-      Min Intensity: 1.0552338361740112
+      Min Intensity: 0.16665898263454437
       Name: LaserScan
       Position Transformer: XYZ
       Selectable: true
@@ -203,7 +203,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 19.514850616455078
+      Distance: 27.41695785522461
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -218,10 +218,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6550003290176392
+      Pitch: 0.5250004529953003
       Target Frame: base_link
       Value: ThirdPersonFollower (rviz_default_plugins)
-      Yaw: 3.155006170272827
+      Yaw: 3.7200114727020264
     Saved:
       - Class: rviz_default_plugins/ThirdPersonFollower
         Distance: 10

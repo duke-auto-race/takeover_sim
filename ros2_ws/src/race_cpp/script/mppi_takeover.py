@@ -6,10 +6,14 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64MultiArray, Float64
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
+from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import ColorRGBA
 import numpy as np
 import torch
 import torch.distributions as dist
+import csv
+import os
+import math
 
 class LidarFollowerNode(Node):
     def __init__(self):
@@ -34,6 +38,22 @@ class LidarFollowerNode(Node):
             Float64,
             '/sim_server/vel_x',
             self.vel_x_callback,
+            10
+        )
+
+        # Subscriber for ego vehicle pose
+        self.pos_sub = self.create_subscription(
+            PoseStamped,
+            '/sim_server/pos',
+            self.pos_callback,
+            10
+        )
+
+        # Subscriber for AI (opponent) vehicle pose
+        self.ai_pos_sub = self.create_subscription(
+            PoseStamped,
+            '/sim_server/ai_pos',
+            self.ai_pos_callback,
             10
         )
 
@@ -96,6 +116,16 @@ class LidarFollowerNode(Node):
         self.distance_maintain_time = self.get_parameter('distance_maintain_time').value
         self.max_takeover_distance = self.get_parameter('max_takeover_distance').value
 
+        # Ego pose state
+        self.ego_x = 0.0
+        self.ego_y = 0.0
+        self.ego_yaw = 0.0
+
+        # AI (opponent) pose state
+        self.ai_x = 0.0
+        self.ai_y = 0.0
+        self.ai_yaw = 0.0
+
         # State variables
         self.current_velocity = 0.0
         self.last_distance_error = 0.0
@@ -110,6 +140,22 @@ class LidarFollowerNode(Node):
         # PyTorch device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.get_logger().info(f'Using device: {self.device}')
+
+        # CSV logging
+        self.csv_path = '/home/patrick/takeover_sim/ros2_ws/src/race_cpp/script/log.csv'
+        if os.path.exists(self.csv_path):
+            os.remove(self.csv_path)
+            self.get_logger().info(f'Removed existing log.csv')
+        with open(self.csv_path, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                'timestamp_sec',
+                'ego_x', 'ego_y', 'ego_yaw', 'ego_velocity',
+                'ai_x', 'ai_y', 'ai_yaw',
+                'mppi_mode',
+                'throttle', 'steering'
+            ])
+        self.get_logger().info(f'CSV logging to: {self.csv_path}')
 
         self.get_logger().info('LiDAR Follower Node Started')
         self.get_logger().info(f'Mode: {self.mode}')
@@ -249,58 +295,160 @@ class LidarFollowerNode(Node):
         
         return torch.stack([x_next, y_next, theta_next, v_next], dim=1)
     
+    # def mppi_cost(self, states, controls, opponent_x, opponent_y):
+    #     num_samples = states.shape[0]
+    #     horizon = controls.shape[1]
+
+    #     total_cost = torch.zeros(num_samples, device=self.device)
+
+    #     desired_side = -1.0   # right side
+    #     clearance = 3.6       # lateral clearance (meters)
+
+    #     for t in range(horizon):
+    #         x = states[:, t, 0]
+    #         y = states[:, t, 1]
+    #         v = states[:, t, 3]
+
+    #         dx = x - opponent_x
+    #         dy = y - opponent_y
+    #         dist = torch.sqrt(dx**2 + dy**2 + 1e-6)
+
+    #         # 1. collision
+    #         collision_cost = 1.0 / (dist + 1.0)
+
+    #         # 2. velocity
+    #         desired_v = self.desired_velocity * 1.3
+    #         velocity_cost = self.mppi_cost_velocity * (v - desired_v)**2
+
+    #         # 3. control smoothing
+    #         control_cost = 4.0 * (controls[:, t, 0]**2 + controls[:, t, 1]**2)
+
+    #         # 4. side commitment (stay right)
+    #         side_error = (torch.sign(dy + 1e-3) - desired_side)**2
+    #         side_cost = 2000.0 * side_error
+
+    #         # 5. forward progress
+    #         progress = -20.0 * (x - opponent_x)
+
+    #         # 6. reverse penalty
+    #         reverse_cost = 20000.0 * torch.clamp(-v, min=0.0)**2
+
+    #         # 7. lateral clearance (key fix)
+    #         lateral_gap = torch.abs(dy)
+    #         gap_violation = torch.clamp(clearance - lateral_gap, min=0.0)
+    #         clearance_cost = 30.0 * gap_violation**2
+
+    #         total_cost += (
+    #             collision_cost +
+    #             velocity_cost +
+    #             control_cost +
+    #             side_cost +
+    #             progress +
+    #             reverse_cost +
+    #             clearance_cost
+    #         )
+
+    #     return total_cost
+    
     def mppi_cost(self, states, controls, opponent_x, opponent_y):
-        num_samples = states.shape[0]
-        horizon = controls.shape[1]
+        N = states.shape[0]
+        T = controls.shape[1]
+        device = self.device
+        dtype = states.dtype
 
-        total_cost = torch.zeros(num_samples, device=self.device)
+        total_cost = torch.zeros(N, device=device, dtype=dtype)
 
-        desired_side = -1.0   # right side
-        clearance = 3.6       # lateral clearance (meters)
+        # weights
+        w_progress = 80.0
+        w_terminal = 200.0
+        w_speed = 0.5
+        w_collision = 80.0
+        w_right_pass = 120.0
+        w_control = 0.1
+        w_smooth = 20.0
+        w_reverse = 15000.0
 
-        for t in range(horizon):
+        # NEW (key fix)
+        w_dir = 300.0       # enforce steer direction
+        w_flip = 20000.0      # penalize sign flip
+        
+
+        desired_v = self.desired_velocity * 1.05
+
+        sigma_x = 6.0
+        sigma_y = 2.0
+
+        prev_steer = None
+        prev_accel = None
+
+        for t in range(T):
             x = states[:, t, 0]
             y = states[:, t, 1]
             v = states[:, t, 3]
 
+            steer = controls[:, t, 0]
+            accel = controls[:, t, 1]
+
             dx = x - opponent_x
             dy = y - opponent_y
-            dist = torch.sqrt(dx**2 + dy**2 + 1e-6)
 
-            # 1. collision
-            collision_cost = 1.0 / (dist + 1.0)
+            # behind condition
+            behind_mask = (dx < 0.0).to(dtype)
 
-            # 2. velocity
-            desired_v = self.desired_velocity * 1.3
-            velocity_cost = self.mppi_cost_velocity * (v - desired_v)**2
+            # 1) progress
+            progress_cost = -w_progress * dx
 
-            # 3. control smoothing
-            control_cost = 4.0 * (controls[:, t, 0]**2 + controls[:, t, 1]**2)
+            # 2) enforce right-side passing (dy < 0 while behind)
+            right_pass_cost = w_right_pass * behind_mask * torch.clamp(dy, min=0.0) ** 2
 
-            # 4. side commitment (stay right)
-            side_error = (torch.sign(dy + 1e-3) - desired_side)**2
-            side_cost = 20.0 * side_error
+            # 3) obstacle
+            obstacle_cost = w_collision * torch.exp(
+                -(dx ** 2) / (2.0 * sigma_x ** 2)
+                -(dy ** 2) / (2.0 * sigma_y ** 2)
+            )
 
-            # 5. forward progress
-            progress = -8.0 * (x - opponent_x)
+            # 4) speed
+            speed_cost = w_speed * (v - desired_v) ** 2
 
-            # 6. reverse penalty
-            reverse_cost = 20.0 * torch.clamp(-v, min=0.0)**2
+            # 5) control effort
+            control_cost = w_control * (steer ** 2 + 0.2 * accel ** 2)
 
-            # 7. lateral clearance (key fix)
-            lateral_gap = torch.abs(dy)
-            gap_violation = torch.clamp(clearance - lateral_gap, min=0.0)
-            clearance_cost = 30.0 * gap_violation**2
+            # 6) smoothness
+            if prev_steer is None:
+                smooth_cost = torch.zeros_like(control_cost)
+                flip_cost = torch.zeros_like(control_cost)
+            else:
+                dsteer = steer - prev_steer
+                daccel = accel - prev_accel
+                smooth_cost = w_smooth * (dsteer ** 2 + 0.1 * daccel ** 2)
+
+                # penalize steering sign flip while behind
+                flip = (torch.sign(self.prev_steer) * torch.sign(steer) < 0.0).to(dtype)
+                flip_cost = w_flip * behind_mask * flip
+
+            self.prev_steer = steer
+            prev_accel = accel
+
+            # 7) enforce monotonic steering direction (right pass => steer <= 0)
+            steer_dir_cost = w_dir * behind_mask * torch.clamp(steer, min=0.0) ** 2
+
+            # 8) reverse penalty
+            reverse_cost = w_reverse * torch.clamp(-v, min=0.0) ** 2
 
             total_cost += (
-                collision_cost +
-                velocity_cost +
-                control_cost +
-                side_cost +
-                progress +
-                reverse_cost +
-                clearance_cost
+                progress_cost
+                + right_pass_cost
+                + obstacle_cost
+                + speed_cost
+                + control_cost
+                + smooth_cost
+                + flip_cost
+                + steer_dir_cost
+                + reverse_cost
             )
+
+        final_dx = states[:, -1, 0] - opponent_x
+        total_cost += -w_terminal * final_dx
 
         return total_cost
     
@@ -350,6 +498,25 @@ class LidarFollowerNode(Node):
     def vel_x_callback(self, msg: Float64):
         """Update current velocity from ego vehicle"""
         self.current_velocity = msg.data
+
+    def pos_callback(self, msg: PoseStamped):
+        """Update ego vehicle pose from /sim_server/pos"""
+        self.ego_x = msg.pose.position.x
+        self.ego_y = msg.pose.position.y
+        # Convert quaternion to yaw
+        q = msg.pose.orientation
+        siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        self.ego_yaw = math.atan2(siny_cosp, cosy_cosp)
+
+    def ai_pos_callback(self, msg: PoseStamped):
+        """Update AI opponent pose from /sim_server/ai_pos"""
+        self.ai_x = msg.pose.position.x
+        self.ai_y = msg.pose.position.y
+        q = msg.pose.orientation
+        siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        self.ai_yaw = math.atan2(siny_cosp, cosy_cosp)
     
     def find_clusters(self, ranges, angles, valid_mask):
         """Find clusters of consecutive points at similar ranges"""
@@ -612,7 +779,7 @@ class LidarFollowerNode(Node):
         
         # Publish control command
         self.publish_command(throttle, steering)
-        
+
         # Log status
         self.get_logger().info(
             f'Clusters: {len(clusters)}, Size: {cluster_size} pts, '
@@ -621,17 +788,32 @@ class LidarFollowerNode(Node):
             f'Throttle: {throttle:.2f}, Steering: {steering:.2f}'
         )
     
+    def _log_csv(self, throttle, steering):
+        ts = self.get_clock().now().nanoseconds / 1e9
+        with open(self.csv_path, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                f'{ts:.6f}',
+                f'{self.ego_x:.6f}', f'{self.ego_y:.6f}',
+                f'{self.ego_yaw:.6f}', f'{self.current_velocity:.6f}',
+                f'{self.ai_x:.6f}', f'{self.ai_y:.6f}', f'{self.ai_yaw:.6f}',
+                int(self.mppi_mode),
+                f'{throttle:.6f}', f'{steering:.6f}'
+            ])
+
     def publish_command(self, throttle, steering):
         """Publish control command to /rc/virtual"""
         msg = Float64MultiArray()
         msg.data = [float(throttle), float(steering)]
         self.rc_pub.publish(msg)
+        self._log_csv(throttle, steering)
     
     def publish_stop_command(self):
         """Publish stop command"""
         msg = Float64MultiArray()
         msg.data = [0.0, 0.0]
         self.rc_pub.publish(msg)
+        self._log_csv(0.0, 0.0)
 
 def main(args=None):
     rclpy.init(args=args)

@@ -150,6 +150,7 @@ class sim_server
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr track_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr ai_viz_pub;
+        rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ai_pos_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr lidar_viz_pub;
         rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr lidar_scan_pub;
 
